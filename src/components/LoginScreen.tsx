@@ -91,6 +91,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
       if (!res.ok) {
         // Handle specific error codes
         const errorMsg = data.error || 'Authentication failed.';
+        const hintMsg = data.hint || null;
         
         if (errorMsg.includes('username') && errorMsg.includes('already')) {
           setError('This username is already taken. Please choose a different one.');
@@ -100,6 +101,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
           setError('Too many login attempts. Please wait a few minutes and try again.');
         } else if (errorMsg.includes('Invalid')) {
           setError('Invalid username or password. Please check your credentials.');
+        } else if (res.status === 503) {
+          // Database connection error - show with hint
+          setError(errorMsg + (hintMsg ? `\n\n💡 ${hintMsg}` : ''));
         } else {
           setError(errorMsg);
         }
@@ -166,7 +170,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
           {error && (
             <div className="mb-4 p-3 rounded-lg flex items-start gap-2" style={{ backgroundColor: 'var(--error-bg)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--error)' }} />
-              <p className="text-xs" style={{ color: 'var(--error)' }}>{error}</p>
+              <div className="text-xs whitespace-pre-line" style={{ color: 'var(--error)' }}>
+                {error}
+              </div>
             </div>
           )}
 

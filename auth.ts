@@ -291,6 +291,27 @@ export async function registerHandler(req: Request, res: Response) {
   }
 
   try {
+    // Check database connection first
+    let dbConnected = false;
+    try {
+      const p = getPool();
+      await p.execute('SELECT 1');
+      dbConnected = true;
+    } catch (dbErr) {
+      console.error('Database connection error:', dbErr);
+      return res.status(503).json({ 
+        error: 'Database connection failed. Please ensure MySQL/XAMPP is running and the "sentinel" database exists.',
+        hint: 'Run: CREATE DATABASE sentinel CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+      });
+    }
+
+    if (!dbConnected) {
+      return res.status(503).json({ 
+        error: 'Database connection failed. Please ensure MySQL/XAMPP is running.',
+        hint: 'Check that XAMPP MySQL is started and the "sentinel" database exists.'
+      });
+    }
+
     const existing = await loadUserByUsername(username);
     if (existing) {
       return res.status(409).json({ error: 'That username is already taken.' });
@@ -315,6 +336,27 @@ export async function registerHandler(req: Request, res: Response) {
     return res.status(201).json({ user: publicUser(user) });
   } catch (err: any) {
     console.error('Registration error:', err);
+    
+    // Handle specific MySQL errors
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(503).json({ 
+        error: 'Database tables not found. Please restart the server to initialize the database.',
+        hint: 'Ensure the server started successfully with "npm run dev" or "npm start"'
+      });
+    }
+    if (err.code === 'ECONNREFUSED') {
+      return res.status(503).json({ 
+        error: 'Cannot connect to MySQL server.',
+        hint: 'Start XAMPP and ensure MySQL is running on port 3306.'
+      });
+    }
+    if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(503).json({ 
+        error: 'MySQL access denied. Check your credentials in .env file.',
+        hint: 'Default XAMPP credentials: user=root, password=empty'
+      });
+    }
+    
     return res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 }
