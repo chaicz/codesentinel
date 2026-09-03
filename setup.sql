@@ -20,7 +20,7 @@ USE sentinel;
 CREATE TABLE IF NOT EXISTS users (
   id             VARCHAR(36)   PRIMARY KEY COMMENT '[DESIGN] UUID primary key — unique per user account',
   username       VARCHAR(32)   NOT NULL UNIQUE COMMENT '[DESIGN] User handle (3–32 chars, a-z/0-9/_), shown in the UI header',
-  password_hash  VARCHAR(160)  NOT NULL COMMENT '[CORE FUNCTION] scrypt hash — salt:hex (16 bytes) + derived key (64 bytes), never stored in plaintext',
+  password_hash  VARCHAR(192) NOT NULL COMMENT '[CORE FUNCTION] scrypt hash — salt:hex (16 bytes) + derived key (64 bytes), never stored in plaintext',
   created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '[DESIGN] Account creation timestamp, displayed in profile / audit logs',
   ai_provider    VARCHAR(20)   DEFAULT 'gemini' COMMENT '[DESIGN] Active AI provider — gemini | openai | anthropic — set in AI Settings modal',
   ai_api_key    VARCHAR(255)  DEFAULT '' COMMENT '[DESIGN] Encrypted API key for the chosen provider — stored per-user, used by aiService.ts',

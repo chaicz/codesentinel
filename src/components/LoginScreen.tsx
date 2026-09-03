@@ -25,13 +25,13 @@
  * 
  * SECURITY FEATURES:
  * - scrypt hashing for passwords (backend)
- * - Rate limiting awareness (displays friendly message on "Too many attempts")
+ * - Rate limiting with countdown timer (displays seconds remaining)
  * - No password stored in localStorage
  * ============================================================================
  */
 
-import React, { useState } from 'react';
-import { Lock, ShieldCheck, UserPlus, LogIn, Zap, ArrowRight, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, ShieldCheck, UserPlus, LogIn, Zap, ArrowRight, AlertCircle, CheckCircle, Loader2, Clock } from 'lucide-react';
 import { AuthUser } from '../types';
 import { LandingPage } from './LandingPage';
 
@@ -47,6 +47,30 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Rate limit countdown state
+  const [rateLimitSeconds, setRateLimitSeconds] = useState<number>(0);
+  const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
+
+  // Rate limit countdown effect
+  useEffect(() => {
+    if (rateLimitResetAt === null) return;
+    
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((rateLimitResetAt - Date.now()) / 1000));
+      setRateLimitSeconds(remaining);
+      
+      if (remaining <= 0) {
+        setRateLimitResetAt(null);
+        setRateLimitSeconds(0);
+      }
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    
+    return () => clearInterval(interval);
+  }, [rateLimitResetAt]);
 
   // Clear error when mode changes
   const handleModeChange = (newMode: 'login' | 'register') => {
@@ -98,7 +122,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
         } else if (errorMsg.includes('password')) {
           setError('Password must be between 8 and 128 characters.');
         } else if (errorMsg.includes('Too many')) {
-          setError('Too many login attempts. Please wait a few minutes and try again.');
+          // Rate limited - show countdown
+          const retrySeconds = data.retryAfter || 0;
+          const resetAt = data.resetAt || (Date.now() + retrySeconds * 1000);
+          setRateLimitSeconds(retrySeconds);
+          setRateLimitResetAt(resetAt);
+          setError(`Too many login attempts. Please wait before trying again.`);
         } else if (errorMsg.includes('Invalid')) {
           setError('Invalid username or password. Please check your credentials.');
         } else if (res.status === 503) {
@@ -168,10 +197,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 rounded-lg flex items-start gap-2" style={{ backgroundColor: 'var(--error-bg)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--error)' }} />
-              <div className="text-xs whitespace-pre-line" style={{ color: 'var(--error)' }}>
-                {error}
+            <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--error-bg)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--error)' }} />
+                <div className="flex-1">
+                  <div className="text-xs whitespace-pre-line" style={{ color: 'var(--error)' }}>
+                    {error}
+                  </div>
+                  {rateLimitSeconds > 0 && (
+                    <div className="mt-2 flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--error)' }}>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Try again in <span className="font-mono">{rateLimitSeconds}</span> seconds</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -266,12 +305,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
             <button
               id="auth-submit"
               type="submit"
-              disabled={isSubmitting || (mode === 'register' && password !== confirmPassword)}
+              disabled={isSubmitting || rateLimitSeconds > 0 || (mode === 'register' && password !== confirmPassword)}
               className="w-full flex items-center justify-center gap-2 rounded-md py-2.5 text-sm font-medium cursor-pointer disabled:opacity-50"
               style={{ backgroundColor: 'var(--accent)', color: 'white' }}
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : rateLimitSeconds > 0 ? (
+                <><Clock className="w-4 h-4" /><span>Wait {rateLimitSeconds}s</span></>
               ) : mode === 'login' ? (
                 <><LogIn className="w-4 h-4" /><span>Sign in</span></>
               ) : (

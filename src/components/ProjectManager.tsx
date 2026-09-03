@@ -83,8 +83,33 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   const [isCreatingFile, setIsCreatingFile] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
   const [newFileName, setNewFileName] = useState('');
+  const [newFileLanguage, setNewFileLanguage] = useState('python');
   const [showExportMenu, setShowExportMenu] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectId: string; fileId?: string } | null>(null);
+
+  // Available languages for file creation
+  const availableLanguages = [
+    { id: 'python', label: 'Python', ext: '.py' },
+    { id: 'javascript', label: 'JavaScript', ext: '.js' },
+    { id: 'typescript', label: 'TypeScript', ext: '.ts' },
+    { id: 'c', label: 'C', ext: '.c' },
+    { id: 'cpp', label: 'C++', ext: '.cpp' },
+    { id: 'java', label: 'Java', ext: '.java' },
+    { id: 'csharp', label: 'C#', ext: '.cs' },
+    { id: 'go', label: 'Go', ext: '.go' },
+    { id: 'rust', label: 'Rust', ext: '.rs' },
+    { id: 'ruby', label: 'Ruby', ext: '.rb' },
+    { id: 'php', label: 'PHP', ext: '.php' },
+    { id: 'swift', label: 'Swift', ext: '.swift' },
+    { id: 'kotlin', label: 'Kotlin', ext: '.kt' },
+    { id: 'sql', label: 'SQL', ext: '.sql' },
+    { id: 'html', label: 'HTML', ext: '.html' },
+    { id: 'css', label: 'CSS', ext: '.css' },
+    { id: 'json', label: 'JSON', ext: '.json' },
+    { id: 'yaml', label: 'YAML', ext: '.yaml' },
+    { id: 'bash', label: 'Bash/Shell', ext: '.sh' },
+    { id: 'dockerfile', label: 'Dockerfile', ext: '' },
+  ];
 
   // Load projects from localStorage
   useEffect(() => {
@@ -145,12 +170,18 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
   const handleCreateFile = (projectId: string) => {
     if (!newFileName.trim()) return;
 
-    const fileExtension = getExtension(newFileName);
+    const selectedLang = availableLanguages.find(l => l.id === newFileLanguage) || availableLanguages[0];
+    // Ensure filename has proper extension
+    let finalFileName = newFileName.trim();
+    if (selectedLang.ext && !finalFileName.endsWith(selectedLang.ext)) {
+      finalFileName += selectedLang.ext;
+    }
+
     const file: ProjectFile = {
       id: `file_${Date.now()}`,
-      name: newFileName.trim(),
-      language: extensionToLanguage(fileExtension),
-      content: getStarterCode(fileExtension),
+      name: finalFileName,
+      language: newFileLanguage,
+      content: getStarterCode(newFileLanguage),
     };
 
     const updatedProjects = projects.map((p) => {
@@ -166,6 +197,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
 
     saveProjects(updatedProjects);
     setNewFileName('');
+    setNewFileLanguage('python');
     setIsCreatingFile(null);
   };
 
@@ -503,20 +535,51 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
                 <div className="pl-14 pr-6 pb-3 space-y-1">
                   {/* Create File Form */}
                   {isCreatingFile === project.id && (
-                    <div className="flex items-center gap-2 py-1">
-                      <File className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-                      <input
-                        type="text"
-                        placeholder="filename.py"
-                        value={newFileName}
-                        onChange={(e) => setNewFileName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleCreateFile(project.id)}
-                        className="flex-1 px-2 py-1 text-xs rounded"
-                        style={{ backgroundColor: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none' }}
-                        autoFocus
-                      />
-                      <button onClick={() => handleCreateFile(project.id)} className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--accent)', color: 'white' }}>Add</button>
-                      <button onClick={() => { setIsCreatingFile(null); setNewFileName(''); }} className="text-xs px-2 py-1" style={{ color: 'var(--text-muted)' }}>Cancel</button>
+                    <div className="py-2 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <File className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>New file:</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="filename"
+                          value={newFileName}
+                          onChange={(e) => setNewFileName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleCreateFile(project.id)}
+                          className="flex-1 px-2 py-1.5 text-xs rounded"
+                          style={{ backgroundColor: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none' }}
+                          autoFocus
+                        />
+                        <select
+                          value={newFileLanguage}
+                          onChange={(e) => setNewFileLanguage(e.target.value)}
+                          className="px-2 py-1.5 text-xs rounded cursor-pointer"
+                          style={{ backgroundColor: 'var(--bg-base)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none' }}
+                        >
+                          {availableLanguages.map((lang) => (
+                            <option key={lang.id} value={lang.id} style={{ backgroundColor: 'var(--bg-surface)' }}>
+                              {lang.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleCreateFile(project.id)} 
+                          className="flex-1 text-xs px-3 py-1.5 rounded font-medium"
+                          style={{ backgroundColor: 'var(--accent)', color: 'white' }}
+                        >
+                          Create File
+                        </button>
+                        <button 
+                          onClick={() => { setIsCreatingFile(null); setNewFileName(''); setNewFileLanguage('python'); }} 
+                          className="text-xs px-3 py-1.5 rounded"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   )}
 

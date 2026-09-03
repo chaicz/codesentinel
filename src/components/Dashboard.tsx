@@ -62,6 +62,7 @@ import {
 import { Vulnerability, CodeFile } from '../types';
 
 interface DashboardProps {
+  isOpen: boolean;
   files: CodeFile[];
   vulnerabilities: Vulnerability[];
   securityScore: number;
@@ -72,6 +73,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
+  isOpen,
   files,
   vulnerabilities,
   securityScore,
@@ -80,6 +82,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenReport,
   onOpenSarif,
 }) => {
+  if (!isOpen) return null;
   const criticalCount = vulnerabilities.filter(v => v.severity === 'CRITICAL').length;
   const highCount = vulnerabilities.filter(v => v.severity === 'HIGH').length;
   const mediumCount = vulnerabilities.filter(v => v.severity === 'MEDIUM').length;

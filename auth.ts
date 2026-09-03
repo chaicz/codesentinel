@@ -56,7 +56,7 @@ export async function initializeDatabase(): Promise<void> {
     CREATE TABLE IF NOT EXISTS users (
       id          VARCHAR(36)  PRIMARY KEY,
       username    VARCHAR(32)  NOT NULL UNIQUE,
-      password_hash VARCHAR(160) NOT NULL,
+      password_hash VARCHAR(192) NOT NULL,
       created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
       ai_provider VARCHAR(20)  DEFAULT 'gemini',
       ai_api_key  VARCHAR(255) DEFAULT '',
@@ -362,8 +362,15 @@ export async function registerHandler(req: Request, res: Response) {
 }
 
 export async function loginHandler(req: Request, res: Response) {
+  const entry = loginAttempts.get(clientKey(req));
+  const resetAt = entry?.resetAt || (Date.now() + LOGIN_WINDOW_MS);
+
   if (isLoginRateLimited(req)) {
-    return res.status(429).json({ error: 'Too many login attempts. Try again in a few minutes.' });
+    return res.status(429).json({ 
+      error: 'Too many login attempts. Try again later.',
+      retryAfter: Math.ceil((resetAt - Date.now()) / 1000),
+      resetAt: resetAt
+    });
   }
 
   const username = validateUsername(req.body?.username);
