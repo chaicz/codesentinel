@@ -1,3 +1,35 @@
+/**
+ * ============================================================================
+ * FILE: LoginScreen.tsx
+ * TYPE: Authentication / Entry Point Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * This is the main entry point and authentication screen for the application.
+ * It handles user registration, login, and displays the landing page.
+ * 
+ * DESIGN NOTES:
+ * - Uses a multi-mode approach: 'landing' | 'login' | 'register'
+ * - Integrates with LandingPage component for marketing content
+ * - Supports traditional username/password authentication via API
+ * 
+ * BACKEND INTEGRATION:
+ * - POST /api/auth/login  → Returns user object on success, sets HttpOnly cookie
+ * - POST /api/auth/register → Creates new user account, validates username/password
+ * - Session management via HttpOnly cookies (not JWT)
+ * - Password requirements: 8-128 characters
+ * - Username requirements: 3-32 chars, alphanumeric + underscores only
+ * 
+ * KEY PROPS:
+ * - onAuthenticated: Callback when user successfully logs in (receives AuthUser object)
+ * 
+ * SECURITY FEATURES:
+ * - scrypt hashing for passwords (backend)
+ * - Rate limiting awareness (displays friendly message on "Too many attempts")
+ * - No password stored in localStorage
+ * ============================================================================
+ */
+
 import React, { useState } from 'react';
 import { Lock, ShieldCheck, UserPlus, LogIn, Zap, ArrowRight, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { AuthUser } from '../types';

@@ -1,3 +1,53 @@
+/**
+ * ============================================================================
+ * FILE: OutputPanel.tsx
+ * TYPE: Code Execution Output / Terminal Display Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Displays the output and results of code execution, including stdout,
+ * stderr, exit codes, and runtime security alerts.
+ * 
+ * DESIGN NOTES:
+ * - Bottom panel with tabbed interface (Console | Security)
+ * - Expandable/collapsible height
+ * - Exit code badge and duration display
+ * - Syntax highlighting for output
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: Execution handled by parent component
+ * - Receives ExecutionResult object via props
+ * 
+ * KEY PROPS:
+ * - isRunning: Whether code is currently executing
+ * - onRunCode: Trigger code execution
+ * - result: ExecutionResult object
+ * - onClear: Clear output
+ * - stdinInput, onStdinChange: Standard input
+ * - isExpanded: Toggle expanded/collapsed view
+ * - onToggleExpand: Expand/collapse handler
+ * - activeLanguage: Current language for display
+ * 
+ * TABS:
+ * 1. Console: stdout, stderr, exit code, duration
+ * 2. Security: Runtime security alerts/warnings
+ * 
+ * EXECUTION RESULT STRUCTURE:
+ * - stdout: Standard output text
+ * - stderr: Error output text
+ * - exitCode: Process exit code (0 = success)
+ * - durationMs: Execution time in milliseconds
+ * - timestamp: When execution occurred
+ * - engine: Execution engine used
+ * - securityAlerts: Array of runtime security warnings
+ * 
+ * VISUAL INDICATORS:
+ * - Green text: Successful output
+ * - Red background: Error output
+ * - Exit code badge: 0 (green), non-zero (red)
+ * ============================================================================
+ */
+
 import React, { useState } from 'react';
 import { 
   Play, 

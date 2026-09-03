@@ -1,3 +1,44 @@
+/**
+ * ============================================================================
+ * FILE: LandingPage.tsx
+ * TYPE: Marketing / Landing Page Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Public-facing landing page that introduces the application, showcases
+ * features, demonstrates the product with sample code, and drives
+ * user conversion to sign up/log in.
+ * 
+ * DESIGN NOTES:
+ * - Single page with multiple sections
+ * - Hero section with CTA button
+ * - Feature cards grid
+ * - Live code demo with sample vulnerable code
+ * - Responsive layout
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: Static marketing content
+ * - "Get Started" button triggers callback to show login
+ * 
+ * KEY PROPS:
+ * - onGetStarted: Callback to navigate to login screen
+ * 
+ * SECTIONS:
+ * 1. Navigation bar with logo and CTA
+ * 2. Hero: Headline, tagline, primary CTA
+ * 3. Supported languages display (16+ languages)
+ * 4. Code demo: Sample vulnerable Python code with findings
+ * 5. Features grid: 6 key features with icons
+ * 6. CTA section: Final call to action
+ * 7. Footer: Branding
+ * 
+ * DEMO CONTENT:
+ * - Sample vulnerable SQL code (SQL injection example)
+ * - Shows 3 AI findings (1 Critical, 2 High)
+ * - Security score: 25%
+ * ============================================================================
+ */
+
 import React, { useState } from 'react';
 import { 
   Zap, 

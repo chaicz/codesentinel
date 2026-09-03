@@ -1,3 +1,57 @@
+/**
+ * ============================================================================
+ * FILE: CodeEditor.tsx
+ * TYPE: Main Editor / Code Writing Component (Monaco-based)
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * The primary code editing interface using Monaco Editor (VS Code editor).
+ * Handles code display, editing, vulnerability highlighting, and integrates
+ * with OutputPanel for code execution results.
+ * 
+ * DESIGN NOTES:
+ * - Monaco Editor integration (syntax highlighting, IntelliSense)
+ * - Vulnerability decorations (line highlighting, glyph margin)
+ * - Floating action bar when vulnerability selected
+ * - Tab bar with file info and language selector
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: All data via props
+ * - Code execution handled by parent via onRunCode callback
+ * 
+ * KEY PROPS:
+ * - file: Current CodeFile (name, language, content)
+ * - onChange: Code change callback
+ * - vulnerabilities: Array for decoration/highlighting
+ * - selectedVulnerability: Currently selected for action bar
+ * - onSelectVulnerability: Selection handler
+ * - onAutoFix: Trigger AI fix
+ * - onSimulateExploit: Open exploit simulation
+ * - onResetToDefault: Reset to original code
+ * - isFixing: Loading state
+ * - onRunCode: Code execution trigger
+ * - isRunning, executionResult: Execution state
+ * - isOutputOpen, isOutputExpanded: Output panel control
+ * - onChangeLanguage: Language switcher callback
+ * 
+ * MONACO FEATURES:
+ * - Syntax highlighting for 16+ languages
+ * - Ctrl+Enter to run code
+ * - Line numbers, glyph margin
+ * - Smooth scrolling, cursor animation
+ * 
+ * VULNERABILITY DECORATIONS:
+ * - Line highlighting based on severity color
+ * - Selected line has accent border
+ * - Hover tooltip shows vulnerability summary
+ * 
+ * ACTION BAR (appears when vulnerability selected):
+ * - Shows severity, title, CWE
+ * - Simulate button: Opens ExploitSimulatorModal
+ * - Fix button: Triggers AI remediation
+ * ============================================================================
+ */
+
 import React, { useRef, useEffect } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import { Vulnerability, CodeFile, ExecutionResult } from '../types';

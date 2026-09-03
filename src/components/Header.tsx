@@ -1,3 +1,42 @@
+/**
+ * ============================================================================
+ * FILE: Header.tsx
+ * TYPE: Navigation / Toolbar Component (DESIGN SYSTEM: Primary Header)
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * This is the main top navigation bar that provides access to all major
+ * features of the application. It serves as the primary action hub.
+ * 
+ * DESIGN NOTES:
+ * - Fixed header with dark theme styling
+ * - Responsive layout: shows/hides features based on screen size (lg, md breakpoints)
+ * - Dynamic score display with color coding (green/amber/red based on security score)
+ * 
+ * BACKEND INTEGRATION:
+ * - No direct API calls (stateless UI component)
+ * - Receives all data via props from parent App component
+ * 
+ * KEY PROPS:
+ * - activeFile, files, onSelectFile, onNewFile: File management
+ * - onScan, isScanning, liveScanEnabled, onToggleLiveScan: Security scanning
+ * - securityScore, vulnerabilities: Security status display
+ * - onOpenSarif, onOpenReport, onOpenCloudAudit: Modal triggers
+ * - onOpenRules, onToggleCopilot: Feature toggles
+ * - currentUser, onLogout: User session management
+ * - aiProvider, aiApiKeyConfigured, onOpenAISettings: AI configuration
+ * 
+ * VISUAL ELEMENTS:
+ * - Logo with accent color (teal/cyan)
+ * - File switcher dropdown
+ * - Run button (green), Scan button (teal), Live toggle
+ * - Security score badge with issue count
+ * - Quick access buttons: Projects, Overview, Cloud, Report, SARIF, Rules
+ * - AI settings (shows warning if API key not configured)
+ * - User info with logout button
+ * ============================================================================
+ */
+
 import React from 'react';
 import { 
   Play, 

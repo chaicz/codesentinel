@@ -1,3 +1,52 @@
+/**
+ * ============================================================================
+ * FILE: CustomRuleBuilder.tsx
+ * TYPE: Security Rule Management / Custom Detection Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Provides a UI for creating, editing, and managing custom regex-based
+ * security detection rules. Allows users to define their own vulnerability
+ * patterns beyond built-in detections.
+ * 
+ * DESIGN NOTES:
+ * - Full-screen modal with scrollable rule list
+ * - Category-based filtering (Injection, Crypto, Auth, Config, Custom)
+ * - Severity color coding (CRITICAL=red, HIGH=orange, MEDIUM=yellow, LOW=gray)
+ * - Pattern testing against active file content
+ * - Preset rules provided for common vulnerabilities
+ * 
+ * BACKEND INTEGRATION:
+ * - Rules are stored locally and applied client-side
+ * - No API calls (pattern matching done in browser)
+ * - Import/Export via JSON format
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility
+ * - activeFile: Current file for pattern testing
+ * - onApplyRules: Callback to apply rules to the scanner
+ * 
+ * PRESET RULES INCLUDED:
+ * - Dangerous eval() Usage (CWE-95)
+ * - Hardcoded Secrets (CWE-798)
+ * - SQL Injection Risk (CWE-89)
+ * - Weak Random Number (CWE-330)
+ * - Command Injection (CWE-78)
+ * - XXE Vulnerability (CWE-611)
+ * 
+ * CUSTOM RULE STRUCTURE:
+ * - id: Unique identifier (format: CR-{timestamp})
+ * - name: Human-readable rule name
+ * - pattern: Regex pattern for detection
+ * - severity: CRITICAL | HIGH | MEDIUM | LOW
+ * - owaspCategory: OWASP Top 10 category
+ * - cwe: CWE identifier
+ * - remediationTip: Suggested fix
+ * - language: Target language (or 'all')
+ * - enabled: Toggle for active/inactive
+ * ============================================================================
+ */
+
 import React, { useState, useMemo, useRef } from 'react';
 import { 
   X, 

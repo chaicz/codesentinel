@@ -1,3 +1,46 @@
+/**
+ * ============================================================================
+ * FILE: ProjectManager.tsx
+ * TYPE: Project Management / File Organization Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Allows users to create, organize, and manage multiple projects with
+ * multiple source files. Provides import/export functionality.
+ * 
+ * DESIGN NOTES:
+ * - Modal overlay design with dark theme
+ * - Expandable project tree view
+ * - Context menu for quick actions
+ * - Local storage persistence (no backend required)
+ * 
+ * BACKEND INTEGRATION:
+ * - NO BACKEND REQUIRED: All data stored in localStorage
+ * - Uses STORAGE_KEY = 'sentinel_projects' and CURRENT_PROJECT_KEY
+ * - Export formats: ZIP (via JSZip CDN), JSON backup
+ * - Import: JSON project files
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility control
+ * - currentFile: Currently open file in editor
+ * - onLoadProject: Callback to load project into workspace
+ * 
+ * DATA STRUCTURE (stored in localStorage):
+ * - Project: { id, name, description, files[], createdAt, updatedAt }
+ * - ProjectFile: { id, name, language, content }
+ * 
+ * EXPORT FEATURES:
+ * - Single file download (.py, .js, etc.)
+ * - Entire project as .zip archive
+ * - All projects as JSON backup
+ * 
+ * HELPER FUNCTIONS:
+ * - getExtension(): Extract file extension
+ * - extensionToLanguage(): Map extension to Monaco language ID
+ * - getStarterCode(): Get boilerplate code for new files
+ * ============================================================================
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, 

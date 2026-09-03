@@ -1,3 +1,40 @@
+/**
+ * ============================================================================
+ * FILE: CloudAuditPanel.tsx
+ * TYPE: Cloud Security Checklist / Compliance Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Displays a curated checklist of cloud security best practices across
+ * different cloud platforms (Docker, Kubernetes, AWS, Azure, GCP).
+ * 
+ * DESIGN NOTES:
+ * - Modal overlay with pass/fail status for each check
+ * - Category icons and guidance for failed checks
+ * - Compliance percentage calculation
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: All checks are local pattern matching
+ * - Checks vulnerability array for specific CWE patterns
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility
+ * - files: Files in workspace
+ * - vulnerabilities: Current scan results
+ * 
+ * CLOUD SECURITY CHECKS:
+ * 1. Container Least Privilege (CWE-250) - Docker security
+ * 2. Kubernetes Pod Security (CWE-269) - K8s best practices
+ * 3. Cloud Metadata Protection (CWE-918) - SSRF prevention
+ * 4. Secrets Management (CWE-798) - No hardcoded secrets
+ * 5. Base Image Pinning (CWE-829) - Supply chain security
+ * 
+ * STATUS INDICATORS:
+ * - PASSED: Green checkmark, no action needed
+ * - FAILED: Red warning, guidance provided for fix
+ * ============================================================================
+ */
+
 import React from 'react';
 import { X, Cloud, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { CodeFile, Vulnerability } from '../types';

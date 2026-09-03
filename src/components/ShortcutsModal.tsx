@@ -1,3 +1,38 @@
+/**
+ * ============================================================================
+ * FILE: ShortcutsModal.tsx
+ * TYPE: Keyboard Shortcuts / Help Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Displays a modal with all available keyboard shortcuts for the IDE,
+ * helping users discover and learn productivity shortcuts.
+ * 
+ * DESIGN NOTES:
+ * - Simple modal with key badge display
+ * - Two-column layout (action | keys)
+ * - Keyboard key styling with <kbd> element
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: Static content
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility
+ * 
+ * KEYBOARD SHORTCUTS LISTED:
+ * - Ctrl+Enter: Run code
+ * - Ctrl+S: Save (auto-save enabled, but shown for reference)
+ * - Ctrl+F: Find in editor
+ * - Ctrl+Z: Undo
+ * - Ctrl+Shift+Z: Redo
+ * - Ctrl+L: Clear editor
+ * - Ctrl+/: Toggle comment
+ * - Alt+↑/↓: Move line up/down
+ * - Ctrl+D: Select next occurrence
+ * - Ctrl+Space: Trigger suggestions
+ * ============================================================================
+ */
+
 import React from 'react';
 import { X, Keyboard } from 'lucide-react';
 

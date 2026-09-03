@@ -1,3 +1,48 @@
+/**
+ * ============================================================================
+ * FILE: AISettingsModal.tsx
+ * TYPE: AI Configuration / Settings Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Allows users to configure their preferred AI provider (Gemini, OpenAI,
+ * or Anthropic) and enter their API key for AI-powered features.
+ * 
+ * DESIGN NOTES:
+ * - Modal with provider selection grid
+ * - API key input with show/hide toggle
+ * - Model dropdown per provider
+ * - Current configuration summary
+ * - Success/error status messages
+ * 
+ * BACKEND INTEGRATION:
+ * - POST /api/auth/ai-settings
+ *   Body: { provider, apiKey, model }
+ *   Saves AI configuration to user account
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility
+ * - currentConfig: Current { provider, apiKey, model }
+ * - onSave: Callback with new configuration
+ * 
+ * SUPPORTED AI PROVIDERS:
+ * - Google Gemini (default)
+ * - OpenAI (GPT-4, GPT-4o, etc.)
+ * - Anthropic (Claude 3.5 Sonnet, etc.)
+ * 
+ * API KEY SOURCES:
+ * - Gemini: console.cloud.google.com → APIs & Services → Credentials
+ * - OpenAI: platform.openai.com → API Keys
+ * - Anthropic: console.anthropic.com → API Keys
+ * 
+ * VALIDATION:
+ * - API key required to save
+ * - Validates against backend before saving
+ * - Shows success message on save
+ * - Redirects to settings if API fails
+ * ============================================================================
+ */
+
 import React, { useState } from 'react';
 import { X, CheckCircle, AlertCircle, Settings2, Key, ChevronDown } from 'lucide-react';
 import { AI_PROVIDERS, AIProvider, AIModelOption } from '../types';

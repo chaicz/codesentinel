@@ -1,3 +1,50 @@
+/**
+ * ============================================================================
+ * FILE: Dashboard.tsx
+ * TYPE: Security Overview / Statistics Dashboard Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Provides a high-level overview of the workspace security status,
+ * including vulnerability statistics, file metrics, and language distribution.
+ * 
+ * DESIGN NOTES:
+ * - Modal overlay with grid layout
+ * - Stat cards with icons and color coding
+ * - Progress bars for severity breakdown
+ * - Language distribution chart
+ * - Quick action buttons
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: All data computed from props
+ * 
+ * KEY PROPS:
+ * - files: Array of CodeFile objects
+ * - vulnerabilities: Array of Vulnerability objects
+ * - securityScore: Overall score (0-100)
+ * - onClose: Close modal
+ * - onScan: Trigger security scan
+ * - onOpenReport: Open audit report
+ * - onOpenSarif: Open SARIF export
+ * 
+ * STATISTICS CALCULATED:
+ * - Security Score (with color coding)
+ * - Total Files count
+ * - Lines of Code (sum of all files)
+ * - Total Vulnerabilities count
+ * 
+ * BREAKDOWNS:
+ * - Severity: Critical, High, Medium, Low counts
+ * - Languages: File count per language
+ * - OWASP: Top 5 categories by vulnerability count
+ * 
+ * QUICK ACTIONS:
+ * - Run Deep Scan → Triggers onScan
+ * - View Report → Triggers onOpenReport
+ * - Export SARIF → Triggers onOpenSarif
+ * ============================================================================
+ */
+
 import React from 'react';
 import { 
   Shield, 

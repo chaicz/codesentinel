@@ -1,3 +1,46 @@
+/**
+ * ============================================================================
+ * FILE: SecurityCopilotChat.tsx
+ * TYPE: AI Assistant / Chat Interface Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Provides an AI-powered chat assistant for security-related questions,
+ * code explanations, remediation guidance, and secure coding best practices.
+ * 
+ * DESIGN NOTES:
+ * - Fixed sidebar panel (right side)
+ * - Message bubbles with timestamps
+ * - Quick action prompts for common tasks
+ * - Scrollable message history
+ * 
+ * BACKEND INTEGRATION:
+ * - POST /api/copilot-chat
+ *   Body: { messages[], activeFile, selectedVulnerability }
+ *   Returns: { reply: string }
+ * - Requires AI API key to be configured
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Panel visibility
+ * - activeFile: Current file context for AI
+ * - selectedVulnerability: Specific vulnerability for targeted help
+ * 
+ * QUICK PROMPTS INCLUDED:
+ * - "Fix [vulnerability] securely?"
+ * - "Write security unit tests"
+ * - "Zero Trust implementation"
+ * - "SSRF prevention"
+ * 
+ * MESSAGE STRUCTURE:
+ * - CopilotMessage: { id, sender: 'user'|'assistant', text, timestamp }
+ * - Conversation history sent with each request for context
+ * 
+ * ERROR HANDLING:
+ * - Displays friendly message if AI service unreachable
+ * - Shows "Check your API key" guidance
+ * ============================================================================
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { CodeFile, Vulnerability, CopilotMessage } from '../types';
 import { Bot, Send, Sparkles, X } from 'lucide-react';

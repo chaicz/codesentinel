@@ -1,3 +1,49 @@
+/**
+ * ============================================================================
+ * FILE: SarifModal.tsx
+ * TYPE: SARIF Export / CI/CD Integration Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Exports security scan results in OASIS SARIF 2.1.0 format, a standardized
+ * format supported by GitHub Advanced Security, Azure DevOps, and other
+ * CI/CD platforms for security integrations.
+ * 
+ * DESIGN NOTES:
+ * - Modal with SARIF JSON preview
+ * - Syntax highlighted JSON display
+ * - Copy and download buttons
+ * - CI/CD integration instructions
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: SARIF generated locally via sarifGenerator utility
+ * - Uses generateSarifReport() from ../utils/sarifGenerator
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility
+ * - activeFile: Current file being exported
+ * - vulnerabilities: Array of vulnerabilities to export
+ * 
+ * SARIF FORMAT:
+ * - SARIF (Static Analysis Results Interchange Format) 2.1.0
+ * - OASIS standard for sharing security analysis results
+ * - Compatible with GitHub Code Scanning
+ * 
+ * EXPORT OPTIONS:
+ * - Copy to clipboard (JSON)
+ * - Download as .sarif file
+ * 
+ * CI/CD INTEGRATION:
+ * - GitHub: github/codeql-action/upload-sarif
+ * - Azure DevOps: SARIF artifact upload
+ * - Any SARIF-compatible tool
+ * 
+ * INFO DISPLAY:
+ * - Shows vulnerability count mapped to SARIF
+ * - Displays GitHub action reference
+ * ============================================================================
+ */
+
 import React, { useState } from 'react';
 import { 
   X, 

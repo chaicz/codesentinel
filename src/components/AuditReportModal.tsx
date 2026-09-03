@@ -1,3 +1,44 @@
+/**
+ * ============================================================================
+ * FILE: AuditReportModal.tsx
+ * TYPE: Security Report / Summary Display Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Displays a comprehensive security audit report with grade, score,
+ * vulnerability counts, and detailed findings with remediation advice.
+ * 
+ * DESIGN NOTES:
+ * - Modal overlay with scrollable findings list
+ * - Grade card (A+ to F) based on security score
+ * - Severity breakdown (CRITICAL, HIGH, MEDIUM, LOW) with color coding
+ * - Downloadable as Markdown report
+ * 
+ * BACKEND INTEGRATION:
+ * - No API calls required
+ * - Receives data via props from parent (App component)
+ * - Export generates markdown file client-side
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility
+ * - activeFile: Currently analyzed file
+ * - files: All files in workspace
+ * - vulnerabilities: Array of detected vulnerabilities
+ * - securityScore: Overall score (0-100)
+ * 
+ * GRADING SYSTEM:
+ * - A+ (90-100): Hardened & Production Ready
+ * - A  (80-89):  Secure with Minor Observations
+ * - B  (70-79):  Action Recommended
+ * - C  (50-69):  Elevated Vulnerabilities
+ * - F  (0-49):   Immediate Remediation Required
+ * 
+ * EXPORT FORMAT:
+ * - Markdown (.md) file with timestamp, score, grade, and all findings
+ * - Each finding includes: severity, CWE, CVSS, location, description, remediation
+ * ============================================================================
+ */
+
 import React from 'react';
 import { X, FileCheck2, Download, Shield, Layers } from 'lucide-react';
 import { CodeFile, Vulnerability } from '../types';

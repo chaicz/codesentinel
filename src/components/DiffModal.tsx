@@ -1,3 +1,42 @@
+/**
+ * ============================================================================
+ * FILE: DiffModal.tsx
+ * TYPE: Code Review / Patch Comparison Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Displays the diff between original vulnerable code and AI-generated
+ * secure remediation. Allows user to review changes before applying.
+ * 
+ * DESIGN NOTES:
+ * - Split/diff view with additions (green) and removals (red)
+ * - Security improvement badges
+ * - Explanation of how the fix works
+ * - Apply/Cancel actions
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: Receives pre-computed diff data via props
+ * - Diff calculated by 'diff' library (diffLines)
+ * 
+ * KEY PROPS:
+ * - vulnerability: The vulnerability being fixed
+ * - originalCode: Before fix
+ * - remediatedCode: After fix (AI generated)
+ * - explanation: How the fix works
+ * - securityImprovements: Array of security benefits
+ * - onApplyPatch: Callback with new code to apply
+ * - onClose: Close modal
+ * 
+ * VISUAL DIFF:
+ * - Red lines (-): Code removed (vulnerable)
+ * - Green lines (+): Code added (secure)
+ * - Only shows changed lines, not full file
+ * 
+ * SECURITY IMPROVEMENTS (shown as badges):
+ * - Example: "Parameterized Query", "Input Sanitization", "CSRF Protection"
+ * ============================================================================
+ */
+
 import React from 'react';
 import { Vulnerability } from '../types';
 import { X, Sparkles, CheckCircle2, ShieldCheck, Lock } from 'lucide-react';

@@ -1,3 +1,52 @@
+/**
+ * ============================================================================
+ * FILE: NewFileModal.tsx
+ * TYPE: File Creation / Import Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Provides a UI for creating new source files or importing existing ones
+ * from the local filesystem. Supports 15+ programming languages.
+ * 
+ * DESIGN NOTES:
+ * - Modal with language template buttons
+ * - File upload via drag-and-drop or file picker
+ * - Language auto-detection from file extension
+ * - Starter code templates per language
+ * 
+ * BACKEND INTEGRATION:
+ * - NO API CALLS: File creation handled locally
+ * - Uses LANGUAGE_STARTERS from ../data/presetFiles
+ * 
+ * KEY PROPS:
+ * - isOpen, onClose: Modal visibility
+ * - onCreateFile: Callback with new CodeFile object
+ * 
+ * SUPPORTED LANGUAGES:
+ * Python, JavaScript, TypeScript, C, C++, Go, Java, C#, PHP,
+ * Ruby, Rust, SQL, Bash/Shell, Dockerfile, YAML, JSON, HTML
+ * 
+ * FILE UPLOAD:
+ * - Detects language from extension
+ * - Reads file content via FileReader API
+ * - Auto-populates filename and language
+ * 
+ * STARTER CODE:
+ * - Each language has boilerplate code template
+ * - Examples: Python function main(), JavaScript console.log,
+ *   Java class Main, C++ hello world, etc.
+ * 
+ * CODEFILE STRUCTURE:
+ * - id: Unique identifier
+ * - name: Filename with extension
+ * - language: Programming language
+ * - category: File category (default: 'General')
+ * - description: File description
+ * - content: Source code content
+ * - vulnerabilities: Array (empty for new files)
+ * ============================================================================
+ */
+
 import React, { useState } from 'react';
 import { X, Plus, FileCode, Upload, Code2 } from 'lucide-react';
 import { CodeFile } from '../types';
