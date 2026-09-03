@@ -155,7 +155,6 @@ export interface AuthUser {
   avatar?: string;
   aiConfig?: AIProviderConfig;
   createdAt?: string;
-  isFirebaseUser?: boolean;
 }
 
 // Project/Folder Types

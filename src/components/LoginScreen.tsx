@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Lock, ShieldCheck, UserPlus, LogIn, Zap, ArrowRight, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { AuthUser } from '../types';
 import { LandingPage } from './LandingPage';
-import { useFirebaseAuth, firebaseUserToAuthUser } from '../services/useFirebaseAuth';
-import { getAuthErrorMessage, isFirebaseConfigured } from '../services/firebase';
 
 interface LoginScreenProps {
   onAuthenticated: (user: AuthUser) => void;
@@ -18,41 +16,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Firebase auth hook
-  const {
-    user: firebaseUser,
-    loading: firebaseLoading,
-    error: firebaseError,
-    signInWithGoogle,
-    signOut,
-    clearError: clearFirebaseError,
-  } = useFirebaseAuth();
-
-  // Handle Firebase user authentication
-  useEffect(() => {
-    if (firebaseUser) {
-      const authUser = firebaseUserToAuthUser(firebaseUser);
-      // Store Firebase token for API calls
-      firebaseUser.getIdToken().then((token: string) => {
-        localStorage.setItem('firebase_token', token);
-      });
-      onAuthenticated(authUser);
-    }
-  }, [firebaseUser, onAuthenticated]);
-
-  // Handle Firebase errors
-  useEffect(() => {
-    if (firebaseError) {
-      setError(firebaseError);
-    }
-  }, [firebaseError]);
-
   // Clear error when mode changes
-  useEffect(() => {
+  const handleModeChange = (newMode: 'login' | 'register') => {
+    setMode(newMode);
     setError('');
     setSuccessMessage('');
-    clearFirebaseError();
-  }, [mode, clearFirebaseError]);
+  };
 
   // Traditional auth handler
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,25 +90,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
     }
   };
 
-  // Google sign-in handler
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setSuccessMessage('');
-    
-    if (!isFirebaseConfigured()) {
-      setError('Google Sign-In is not configured. Please contact the administrator.');
-      return;
-    }
-
-    try {
-      const user = await signInWithGoogle();
-      if (user) {
-        setSuccessMessage(`Welcome, ${user.displayName || user.email}!`);
-      }
-    } catch (err) {
-      // Error is handled by the hook
-    }
-  };
+  // Traditional auth handler
 
   if (mode === 'landing') {
     return (
@@ -193,40 +144,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
               <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--success)' }} />
               <p className="text-xs" style={{ color: 'var(--success)' }}>{successMessage}</p>
             </div>
-          )}
-
-          {/* Google Sign-In Button */}
-          {isFirebaseConfigured() && (
-            <>
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={firebaseLoading || isSubmitting}
-                className="w-full flex items-center justify-center gap-3 rounded-md py-2.5 px-4 text-sm font-medium mb-4 cursor-pointer disabled:opacity-50"
-                style={{ 
-                  backgroundColor: 'white', 
-                  color: '#333',
-                  border: '1px solid #ddd',
-                }}
-              >
-                {firebaseLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                )}
-                <span>{mode === 'login' ? 'Continue with Google' : 'Sign up with Google'}</span>
-              </button>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-                <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>or</span>
-                <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-              </div>
-            </>
           )}
 
           {/* Traditional Auth Form */}
@@ -355,6 +272,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px]" style={{ color: 'var(--text-muted)' }}>
           <Lock className="w-3 h-3" />
           scrypt hashing • HttpOnly cookie sessions
+        </p>
+        <p className="mt-1 flex items-center justify-center text-[10px]" style={{ color: 'var(--text-muted)' }}>
+          Contributed by&nbsp;<span style={{ color: 'var(--accent)' }}>ChaiCZ</span>
         </p>
       </div>
     </div>

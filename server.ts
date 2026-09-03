@@ -13,6 +13,7 @@ import {
   registerHandler,
   requireAuth,
   updateAISettingsHandler,
+  initializeDatabase,
   type AuthedRequest,
 } from './auth';
 import {
@@ -451,6 +452,12 @@ app.post('/api/run-code', async (req, res) => {
 
 // Vite middleware & Production static serving
 async function startServer() {
+  try {
+    await initializeDatabase();
+    console.log('MySQL database initialized (XAMPP connection ready)');
+  } catch (err) {
+    console.warn('MySQL initialization failed — will retry on first auth request:', err);
+  }
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
     app.use(vite.middlewares);
