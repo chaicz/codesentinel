@@ -371,14 +371,29 @@ export async function loginHandler(req: Request, res: Response) {
 
   if (!username || !password) {
     recordLoginFailure(req);
-    return res.status(400).json({ error: 'Username and password are required.' });
+    // More specific error messages
+    if (!req.body?.username && !req.body?.password) {
+      return res.status(400).json({ error: 'Username and password are required.' });
+    }
+    if (!req.body?.username) {
+      return res.status(400).json({ error: 'Username is required.' });
+    }
+    if (!req.body?.password) {
+      return res.status(400).json({ error: 'Password is required.' });
+    }
+    return res.status(400).json({ error: 'Invalid username or password format.' });
   }
 
   try {
     const user = await loadUserByUsername(username);
-    const ok = user ? await verifyPassword(password, user.passwordHash) : false;
+    if (!user) {
+      // User doesn't exist - still record failure to prevent enumeration
+      recordLoginFailure(req);
+      return res.status(401).json({ error: 'Invalid username or password.' });
+    }
+    const ok = await verifyPassword(password, user.passwordHash);
 
-    if (!user || !ok) {
+    if (!ok) {
       recordLoginFailure(req);
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
