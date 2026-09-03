@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PRESET_FILES } from './data/presetFiles';
-import { CodeFile, Vulnerability, CustomRule, ExecutionResult, AuthUser, AIProvider, AI_PROVIDERS } from './types';
+import { CodeFile, Vulnerability, CustomRule, ExecutionResult, AuthUser, AIProvider, AI_PROVIDERS, Project } from './types';
 import { runStaticSecurityScan, calculateSecurityScore } from './utils/staticAnalyzer';
 import { Header } from './components/Header';
 import { CodeEditor } from './components/CodeEditor';
@@ -18,6 +18,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { AISettingsModal } from './components/AISettingsModal';
 import { Dashboard } from './components/Dashboard';
 import { ShortcutsModal } from './components/ShortcutsModal';
+import { ProjectManager } from './components/ProjectManager';
 
 export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -59,6 +60,7 @@ export default function App() {
   const [isNewFileOpen, setIsNewFileOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
 
   // Custom Rules
   const [customRules, setCustomRules] = useState<CustomRule[]>([]);
@@ -274,6 +276,26 @@ export default function App() {
 
   const securityScore = calculateSecurityScore(activeFile.vulnerabilities || []);
 
+  // Handle loading a project from ProjectManager
+  const handleLoadProject = (project: Project) => {
+    if (project.files.length > 0) {
+      // Load the first file from the project
+      const firstFile = project.files[0];
+      const newCodeFile: CodeFile = {
+        id: `proj_${project.id}_${firstFile.id}`,
+        name: firstFile.name,
+        language: firstFile.language,
+        category: project.name,
+        description: `From project: ${project.name}`,
+        content: firstFile.content,
+        vulnerabilities: [],
+      };
+      setFiles((prev) => [...prev, newCodeFile]);
+      setActiveFileId(newCodeFile.id);
+      executeLocalScan(newCodeFile.content, newCodeFile.language, newCodeFile.id);
+    }
+  };
+
   // Keyboard shortcut: Ctrl+Shift+P for shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -325,6 +347,7 @@ export default function App() {
         onOpenAISettings={() => setIsAISettingsOpen(true)}
         onOpenDashboard={() => setIsDashboardOpen(true)}
         isDashboardOpen={isDashboardOpen}
+        onOpenProjectManager={() => setIsProjectManagerOpen(true)}
       />
 
       {/* Main Layout */}
@@ -435,6 +458,13 @@ export default function App() {
       />
 
       <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
+
+      <ProjectManager
+        isOpen={isProjectManagerOpen}
+        onClose={() => setIsProjectManagerOpen(false)}
+        currentFile={{ name: activeFile.name, language: activeFile.language, content: activeFile.content }}
+        onLoadProject={handleLoadProject}
+      />
     </div>
   );
 }

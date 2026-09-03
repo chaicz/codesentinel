@@ -15,6 +15,7 @@ import {
   BarChart3,
   Zap,
   ChevronDown,
+  FolderOpen,
 } from 'lucide-react';
 import { AIProvider, AuthUser, CodeFile, Vulnerability } from '../types';
 
@@ -44,6 +45,7 @@ interface HeaderProps {
   onOpenAISettings?: () => void;
   onOpenDashboard?: () => void;
   isDashboardOpen?: boolean;
+  onOpenProjectManager?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -72,6 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAISettings,
   onOpenDashboard,
   isDashboardOpen,
+  onOpenProjectManager,
 }) => {
   const criticalCount = vulnerabilities.filter((v) => v.severity === 'CRITICAL').length;
   const highCount = vulnerabilities.filter((v) => v.severity === 'HIGH').length;
@@ -224,6 +227,20 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Feature Buttons */}
       <div className="hidden lg:flex items-center gap-0.5">
+        {onOpenProjectManager && (
+          <button
+            onClick={onOpenProjectManager}
+            className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md transition-all cursor-pointer"
+            style={{ 
+              backgroundColor: 'transparent',
+              color: 'var(--text-muted)',
+            }}
+            title="Project Manager"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+            <span>Projects</span>
+          </button>
+        )}
         {onOpenDashboard && (
           <button
             onClick={onOpenDashboard}

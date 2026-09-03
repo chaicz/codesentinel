@@ -150,9 +150,27 @@ export interface ExecutionResult {
 // Auth User Interface
 export interface AuthUser {
   id: string;
-  name: string;
-  email: string;
+  username: string;
+  email?: string;
   avatar?: string;
   aiConfig?: AIProviderConfig;
   createdAt?: string;
+  isFirebaseUser?: boolean;
+}
+
+// Project/Folder Types
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  files: ProjectFile[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectFile {
+  id: string;
+  name: string;
+  language: string;
+  content: string;
 }
