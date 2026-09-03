@@ -132,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Zap className="w-4 h-4" style={{ color: 'var(--accent)' }} />
         </div>
         <span className="text-sm font-semibold tracking-tight text-white">
-          Sentinel
+          CodeSentinel
         </span>
         <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ 
           color: 'var(--text-muted)', 

@@ -126,7 +126,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-dim)', border: '1px solid rgba(20,184,166,0.2)' }}>
             <Zap className="w-4 h-4" style={{ color: 'var(--accent)' }} />
           </div>
-          <span className="text-sm font-semibold">Sentinel</span>
+          <span className="text-sm font-semibold">CodeSentinel</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}>IDE</span>
         </div>
         <button
@@ -240,7 +240,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             className="flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-lg mx-auto cursor-pointer"
             style={{ backgroundColor: 'var(--accent)', color: 'white' }}
           >
-            <span>Launch Sentinel IDE</span>
+            <span>Launch CodeSentinel IDE</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -249,7 +249,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       {/* Footer */}
       <footer className="px-6 py-6 text-center" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
         <p className="text-[11px]">
-          Sentinel IDE — AI-Powered Code Security Platform
+          CodeSentinel IDE — AI-Powered Code Security Platform
         </p>
       </footer>
     </div>

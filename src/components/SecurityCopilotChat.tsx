@@ -64,7 +64,7 @@ export const SecurityCopilotChat: React.FC<SecurityCopilotChatProps> = ({
     {
       id: 'msg-init',
       sender: 'assistant',
-      text: `I'm Sentinel Copilot. Ask me about securing \`${activeFile.name}\`, fixing vulnerabilities, OWASP Top 10, CWE, or secure architecture patterns.`,
+      text: `I'm CodeSentinel Copilot. Ask me about securing \`${activeFile.name}\`, fixing vulnerabilities, OWASP Top 10, CWE, or secure architecture patterns.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);

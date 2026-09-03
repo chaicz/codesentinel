@@ -8,7 +8,7 @@ export const PRESET_FILES: CodeFile[] = [
     category: 'General',
     description: 'Starter workspace file. Paste or write your source code here to analyze security and run execution.',
     vulnerabilities: [],
-    content: `# Welcome to Sentinel Code Security & Execution Workspace!
+    content: `# Welcome to CodeSentinel Code Security & Execution Workspace!
 # Paste, write, or upload any source code here.
 # Supports: Python, JavaScript, TypeScript, C, C++, Go, Java, C#, PHP, Ruby, Rust, SQL, Bash, Dockerfile, YAML, JSON.
 
@@ -144,7 +144,7 @@ echo "System date: $(date)"
     language: 'sql',
     content: `-- SQL Query Playground
 SELECT 
-    'Sentinel Security' AS platform,
+    'CodeSentinel Security' AS platform,
     'SQL Engine Active' AS status,
     CURRENT_TIMESTAMP AS executed_at;
 `
@@ -183,7 +183,7 @@ spec:
     name: 'config.json',
     language: 'json',
     content: `{
-  "appName": "SentinelApp",
+  "appName": "CodeSentinelApp",
   "version": "1.0.0",
   "security": {
     "tlsEnabled": true,

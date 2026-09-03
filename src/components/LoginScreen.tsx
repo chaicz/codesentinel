@@ -149,7 +149,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
         onAuthenticated(data.user);
       }
     } catch (err) {
-      setError('Could not reach the Sentinel server. Please check your connection.');
+      setError('Could not reach the CodeSentinel server. Please check your connection.');
     } finally {
       setIsSubmitting(false);
     }
@@ -183,7 +183,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-dim)', border: '1px solid rgba(20,184,166,0.2)' }}>
             <Zap className="w-4 h-4" style={{ color: 'var(--accent)' }} />
           </div>
-          <span className="text-base font-semibold text-white">Sentinel</span>
+          <span className="text-base font-semibold text-white">CodeSentinel</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ color: 'var(--text-muted)', borderColor: 'var(--border)', backgroundColor: 'var(--bg-elevated)' }}>IDE</span>
         </div>
 

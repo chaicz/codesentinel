@@ -16,7 +16,7 @@
  * 
  * BACKEND INTEGRATION:
  * - NO BACKEND REQUIRED: All data stored in localStorage
- * - Uses STORAGE_KEY = 'sentinel_projects' and CURRENT_PROJECT_KEY
+ * - Uses STORAGE_KEY = 'codesentinel_projects' and CURRENT_PROJECT_KEY
  * - Export formats: ZIP (via JSZip CDN), JSON backup
  * - Import: JSON project files
  * 
@@ -67,8 +67,8 @@ interface ProjectManagerProps {
   onLoadProject: (project: Project) => void;
 }
 
-const STORAGE_KEY = 'sentinel_projects';
-const CURRENT_PROJECT_KEY = 'sentinel_current_project';
+const STORAGE_KEY = 'codesentinel_projects';
+const CURRENT_PROJECT_KEY = 'codesentinel_current_project';
 
 export const ProjectManager: React.FC<ProjectManagerProps> = ({
   isOpen,
@@ -296,7 +296,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `sentinel-projects-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `codesentinel-projects-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
     setShowExportMenu(null);
