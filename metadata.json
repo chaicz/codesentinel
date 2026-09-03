@@ -1,0 +1,7 @@
+{
+  "name": "SENTINEL // Secure Coding Assistant",
+  "description": "Editorial-grade real-time security analysis assistant with instant AST triage, OWASP Top 10 detection, live exploit simulation, and automated defense-in-depth patches.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

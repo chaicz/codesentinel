@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENTINEL // Custom Rules Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #09090B;
+      --bg-surface: #111114;
+      --bg-elevated: #18181B;
+      --bg-hover: #202024;
+      --border: #27272A;
+      --border-subtle: #1C1C1F;
+      --border-active: #3F3F46;
+      --accent: #14B8A6;
+      --accent-muted: #0D9488;
+      --accent-dim: rgba(20, 184, 166, 0.12);
+      --accent-glow: rgba(20, 184, 166, 0.25);
+      --text-primary: #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-muted: #52525B;
+      --text-code: #D4D4D8;
+      --critical: #EF4444;
+      --critical-bg: rgba(239, 68, 68, 0.08);
+      --high: #F97316;
+      --high-bg: rgba(249, 115, 22, 0.08);
+      --medium: #EAB308;
+      --medium-bg: rgba(234, 179, 8, 0.08);
+      --low: #6B7280;
+      --low-bg: rgba(107, 114, 128, 0.08);
+      --success: #22C55E;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      letter-spacing: -0.01em;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272A;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3F3F46;
+    }
+
+    ::selection {
+      background-color: var(--accent-dim);
+      color: var(--text-primary);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-muted) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg {
+      width: 24px;
+      height: 24px;
+      color: white;
+    }
+
+    .logo-text h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .logo-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(20, 184, 166, 0.2);
+    }
+
+    /* Main Card */
+    .main-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-title-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--accent-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-title-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--accent);
+    }
+
+    .card-title h2 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .card-title p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 150ms ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .icon-btn.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Stats Panel */
+    .stats-panel {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: var(--bg-surface);
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .stat-critical { color: var(--critical); }
+    .stat-high { color: var(--high); }
+    .stat-medium { color: var(--medium); }
+    .stat-low { color: var(--low); }
+    .stat-enabled { color: var(--success); }
+
+    /* Search & Filters */
+    .search-section {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      margin-bottom: 0.75rem;
+    }
+
+    .search-input-wrapper svg {
+      position: absolute;
+      left: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.625rem 0.875rem 0.625rem 2.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .filter-chips {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .filter-chip:hover {
+      background: var(--bg-hover);
+    }
+
+    .filter-chip.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .filter-chip svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Rules List */
+    .rules-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .rule-item {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: background-color 150ms ease;
+    }
+
+    .rule-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .rule-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .rule-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .toggle-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 150ms ease;
+    }
+
+    .toggle-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .toggle-btn.enabled {
+      color: var(--accent);
+    }
+
+    .toggle-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .rule-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .rule-item.disabled .rule-name {
+      color: var(--text-muted);
+    }
+
+    .severity-badge {
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .severity-critical {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--critical);
+    }
+
+    .severity-high {
+      background: rgba(249, 115, 22, 0.1);
+      color: var(--high);
+    }
+
+    .severity-medium {
+      background: rgba(234, 179, 8, 0.1);
+      color: var(--medium);
+    }
+
+    .severity-low {
+      background: rgba(107, 114, 128, 0.1);
+      color: var(--low);
+    }
+
+    .cwe-tag {
+      font-size: 0.625rem;
+      font-family: 'Fira Code', monospace;
+      color: var(--text-muted);
+      padding: 0.125rem 0.375rem;
+      background: var(--bg-elevated);
+      border-radius: 4px;
+    }
+
+    .rule-pattern {
+      font-size: 0.75rem;
+      font-family: 'Fira Code', monospace;
+      color: var(--text-code);
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rule-match {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+    }
+
+    .rule-match .highlight {
+      color: var(--medium);
+      font-weight: 500;
+    }
+
+    .rule-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .action-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 150ms ease;
+    }
+
+    .action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .action-btn.delete:hover {
+      color: var(--critical);
+    }
+
+    .action-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Create Form */
+    .create-section {
+      padding: 1.5rem;
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .form-input {
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 150ms ease;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-input.mono {
+      font-family: 'Fira Code', monospace;
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--text-muted);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-muted);
+    }
+
+    .btn-secondary {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Footer */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-create {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 150ms ease;
+    }
+
+    .btn-create:hover {
+      background: var(--accent-muted);
+    }
+
+    .btn-create svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-apply {
+      padding: 0.5rem 1.25rem;
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .btn-apply:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-active);
+    }
+
+    /* Presets */
+    .presets-section {
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .presets-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .presets-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .preset-chips {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .preset-chip {
+      padding: 0.375rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .preset-chip:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-active);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .stats-panel {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 300ms ease;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      border-color: var(--success);
+    }
+
+    .toast svg {
+      width: 16px;
+      height: 16px;
+      color: var(--success);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>SENTINEL</h1>
+          <p>Custom Rules Builder</p>
+        </div>
+      </div>
+      <span class="badge">Minimalist Design v2.0</span>
+    </header>
+
+    <!-- Main Card -->
+    <div class="main-card">
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-title-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            </svg>
+          </div>
+          <div>
+            <h2>Security Rules</h2>
+            <p id="rules-count">0 active · 0 total</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn active" id="stats-btn" title="Statistics">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <path d="M3 3v18h18"/>
+              <path d="M18 17V9"/>
+              <path d="M13 17V5"/>
+              <path d="M8 17v-3"/>
+            </svg>
+          </button>
+          <button class="icon-btn" title="Import">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" x2="12" y1="3" y2="15"/>
+            </svg>
+          </button>
+          <button class="icon-btn" id="export-btn" title="Export">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" x2="12" y1="15" y2="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Panel -->
+      <div class="stats-panel" id="stats-panel">
+        <div class="stat-item">
+          <div class="stat-value stat-critical" id="stat-critical">0</div>
+          <div class="stat-label">Critical</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value stat-high" id="stat-high">0</div>
+          <div class="stat-label">High</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value stat-medium" id="stat-medium">0</div>
+          <div class="stat-label">Medium</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value stat-low" id="stat-low">0</div>
+          <div class="stat-label">Low</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value stat-enabled" id="stat-enabled">0</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="stat-disabled">0</div>
+          <div class="stat-label">Disabled</div>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="search-section">
+        <div class="search-input-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input type="text" class="search-input" id="search-input" placeholder="Search rules by name, pattern, or CWE...">
+        </div>
+        <div class="filter-chips" id="filter-chips">
+          <button class="filter-chip active" data-category="all">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            </svg>
+            All
+          </button>
+          <button class="filter-chip" data-category="injection">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+              <path d="M12 9v4"/>
+              <path d="M12 17h.01"/>
+            </svg>
+            Injection
+          </button>
+          <button class="filter-chip" data-category="crypto">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Crypto
+          </button>
+          <button class="filter-chip" data-category="auth">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            Auth
+          </button>
+          <button class="filter-chip" data-category="config">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            Config
+          </button>
+          <button class="filter-chip" data-category="custom">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Custom
+          </button>
+        </div>
+      </div>
+
+      <!-- Presets Section (shown when no rules) -->
+      <div class="presets-section" id="presets-section">
+        <h3 class="presets-title">No custom rules yet</h3>
+        <p class="presets-desc">Start with a preset or create your own rule</p>
+        <div class="preset-chips">
+          <button class="preset-chip" data-preset="eval">+ Dangerous eval() Usage</button>
+          <button class="preset-chip" data-preset="secrets">+ Hardcoded Secrets</button>
+          <button class="preset-chip" data-preset="sql">+ SQL Injection Risk</button>
+          <button class="preset-chip" data-preset="random">+ Weak Random Number</button>
+        </div>
+      </div>
+
+      <!-- Rules List -->
+      <div class="rules-list" id="rules-list"></div>
+
+      <!-- Create Form -->
+      <div class="create-section" id="create-section" style="display: none;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Rule Name</label>
+            <input type="text" class="form-input" id="new-rule-name" placeholder="e.g., Banned eval()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CWE ID</label>
+            <input type="text" class="form-input mono" id="new-rule-cwe" placeholder="e.g., CWE-95">
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Regex Pattern</label>
+            <input type="text" class="form-input mono" id="new-rule-pattern" placeholder="e.g., eval\s*\(">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Severity</label>
+            <div class="select-wrapper">
+              <select class="form-select" id="new-rule-severity">
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH" selected>High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+              <svg class="select-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                <path d="m6 9 6 6 6-6"/>
+              </svg>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">OWASP Category</label>
+            <input type="text" class="form-input" id="new-rule-owasp" placeholder="e.g., A03:2021-Injection">
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Remediation Tip</label>
+            <input type="text" class="form-input" id="new-rule-remediation" placeholder="How to fix this issue...">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary" id="cancel-create">Cancel</button>
+          <button class="btn btn-primary" id="save-rule">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Create Rule
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="card-footer">
+        <button class="btn-create" id="new-rule-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
+          New Rule
+        </button>
+        <button class="btn-apply" id="apply-rules">Apply 0 Rules</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <span id="toast-message">Rule created successfully</span>
+  </div>
+
+  <script>
+    // Initial state
+    let rules = [];
+    let activeCategory = 'all';
+    let searchQuery = '';
+    let showStats = true;
+    let showCreateForm = false;
+
+    // Sample code content for demo
+    const sampleCode = `
+      // This is sample code for pattern matching demo
+      const apiKey = "sk_live_1234567890abcdef";
+      eval(userInput);
+      Math.random();
+      query = "SELECT * FROM users WHERE id = " + userId;
+    `;
+
+    // Preset rules
+    const presetRules = [
+      { name: 'Dangerous eval() Usage', pattern: 'eval\\s*\\(', severity: 'CRITICAL', owaspCategory: 'A03:2021-Injection', cwe: 'CWE-95', message: 'eval() executes arbitrary code', remediationTip: 'Use JSON.parse() instead', enabled: true },
+      { name: 'Hardcoded Secrets', pattern: '(api[_-]?key|password|secret|token)\\s*[:=]\\s*["\'][^"\']{8,}["\']', severity: 'CRITICAL', owaspCategory: 'A02:2021-Cryptographic Failures', cwe: 'CWE-798', message: 'Hardcoded secrets detected', remediationTip: 'Use environment variables', enabled: true },
+      { name: 'SQL Injection Risk', pattern: '(execute|query|cursor)\\s*\\(.*["\'].*%.*["\']', severity: 'CRITICAL', owaspCategory: 'A03:2021-Injection', cwe: 'CWE-89', message: 'Potential SQL injection vulnerability', remediationTip: 'Use parameterized queries', enabled: true },
+      { name: 'Weak Random Number', pattern: 'Math\\.random\\s*\\(', severity: 'MEDIUM', owaspCategory: 'A02:2021-Cryptographic Failures', cwe: 'CWE-330', message: 'Predictable random numbers', remediationTip: 'Use crypto.getRandomValues()', enabled: true },
+      { name: 'Command Injection', pattern: 'exec\\s*\\(|spawn\\s*\\(|system\\s*\\(', severity: 'CRITICAL', owaspCategory: 'A03:2021-Injection', cwe: 'CWE-78', message: 'OS command injection risk', remediationTip: 'Avoid shell commands', enabled: true },
+      { name: 'XXE Vulnerability', pattern: 'XMLParser|XMLReader|loadXML', severity: 'HIGH', owaspCategory: 'A05:2021-Security Misconfiguration', cwe: 'CWE-611', message: 'XML external entity risk', remediationTip: 'Disable XXE in parser config', enabled: true },
+    ];
+
+    // DOM Elements
+    const rulesList = document.getElementById('rules-list');
+    const presetsSection = document.getElementById('presets-section');
+    const createSection = document.getElementById('create-section');
+    const statsPanel = document.getElementById('stats-panel');
+    const rulesCount = document.getElementById('rules-count');
+    const applyBtn = document.getElementById('apply-rules');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+
+    // Initialize
+    function init() {
+      loadRules();
+      render();
+      bindEvents();
+    }
+
+    // Load rules from localStorage or use presets
+    function loadRules() {
+      const saved = localStorage.getItem('sentinel-rules');
+      if (saved) {
+        try {
+          rules = JSON.parse(saved);
+        } catch {
+          rules = [...presetRules];
+        }
+      } else {
+        rules = [...presetRules];
+      }
+    }
+
+    // Save rules to localStorage
+    function saveRules() {
+      localStorage.setItem('sentinel-rules', JSON.stringify(rules));
+    }
+
+    // Calculate statistics
+    function getStats() {
+      return rules.reduce((acc, rule) => ({
+        critical: acc.critical + (rule.severity === 'CRITICAL' ? 1 : 0),
+        high: acc.high + (rule.severity === 'HIGH' ? 1 : 0),
+        medium: acc.medium + (rule.severity === 'MEDIUM' ? 1 : 0),
+        low: acc.low + (rule.severity === 'LOW' ? 1 : 0),
+        enabled: acc.enabled + (rule.enabled ? 1 : 0),
+        disabled: acc.disabled + (!rule.enabled ? 1 : 0),
+      }), { critical: 0, high: 0, medium: 0, low: 0, enabled: 0, disabled: 0 });
+    }
+
+    // Filter rules
+    function filterRules() {
+      return rules.filter(rule => {
+        const matchesSearch = !searchQuery || 
+          rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          rule.pattern.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          rule.cwe.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (!matchesSearch) return false;
+        
+        if (activeCategory === 'all') return true;
+        if (activeCategory === 'custom') return !rule.id.startsWith('CR-0');
+        
+        const categoryMap = {
+          injection: ['A03:2021', 'CWE-89', 'CWE-78', 'CWE-95'],
+          crypto: ['A02:2021', 'CWE-330', 'CWE-798'],
+          auth: ['A07:2021'],
+          config: ['A05:2021', 'A08:2021'],
+        };
+        
+        const keywords = categoryMap[activeCategory] || [];
+        return keywords.some(kw => rule.owaspCategory.includes(kw) || rule.cwe.includes(kw));
+      });
+    }
+
+    // Test pattern against sample code
+    function testPattern(pattern) {
+      if (!pattern) return 0;
+      try {
+        const regex = new RegExp(pattern, 'g');
+        const matches = sampleCode.match(regex);
+        return matches ? matches.length : 0;
+      } catch {
+        return -1;
+      }
+    }
+
+    // Render statistics
+    function renderStats() {
+      const stats = getStats();
+      document.getElementById('stat-critical').textContent = stats.critical;
+      document.getElementById('stat-high').textContent = stats.high;
+      document.getElementById('stat-medium').textContent = stats.medium;
+      document.getElementById('stat-low').textContent = stats.low;
+      document.getElementById('stat-enabled').textContent = stats.enabled;
+      document.getElementById('stat-disabled').textContent = stats.disabled;
+      rulesCount.textContent = `${stats.enabled} active · ${rules.length} total`;
+      applyBtn.textContent = `Apply ${stats.enabled} Rules`;
+    }
+
+    // Render rules list
+    function renderRules() {
+      const filtered = filterRules();
+      
+      if (rules.length === 0) {
+        presetsSection.style.display = 'block';
+        rulesList.innerHTML = '';
+        return;
+      }
+      
+      presetsSection.style.display = 'none';
+      
+      rulesList.innerHTML = filtered.map(rule => {
+        const matchCount = testPattern(rule.pattern);
+        const severityClass = `severity-${rule.severity.toLowerCase()}`;
+        const itemClass = rule.enabled ? 'rule-item' : 'rule-item disabled';
+        
+        return `
+          <div class="${itemClass}" data-id="${rule.id}">
+            <div class="rule-content">
+              <div class="rule-header">
+                <button class="toggle-btn ${rule.enabled ? 'enabled' : ''}" data-action="toggle" data-id="${rule.id}">
+                  ${rule.enabled ? 
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' :
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" x2="23" y1="1" y2="23"/></svg>'
+                  }
+                </button>
+                <span class="rule-name">${rule.name}</span>
+                <span class="severity-badge ${severityClass}">${rule.severity}</span>
+                <span class="cwe-tag">${rule.cwe}</span>
+              </div>
+              <code class="rule-pattern">${rule.pattern}</code>
+              ${matchCount > 0 ? `<div class="rule-match"><span class="highlight">${matchCount} matches</span> in sample code</div>` : ''}
+            </div>
+            <div class="rule-actions">
+              <button class="action-btn" data-action="test" data-id="${rule.id}" title="Test pattern">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </button>
+              <button class="action-btn" data-action="duplicate" data-id="${rule.id}" title="Duplicate">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              </button>
+              <button class="action-btn delete" data-action="delete" data-id="${rule.id}" title="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render everything
+    function render() {
+      renderStats();
+      renderRules();
+      statsPanel.style.display = showStats ? 'grid' : 'none';
+      createSection.style.display = showCreateForm ? 'block' : 'none';
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+      toastMessage.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Add new rule
+    function addRule(ruleData) {
+      const rule = {
+        id: `CR-${Date.now()}`,
+        ...ruleData,
+        enabled: true,
+      };
+      rules.push(rule);
+      saveRules();
+      render();
+      showToast('Rule created successfully');
+    }
+
+    // Delete rule
+    function deleteRule(id) {
+      rules = rules.filter(r => r.id !== id);
+      saveRules();
+      render();
+      showToast('Rule deleted');
+    }
+
+    // Toggle rule
+    function toggleRule(id) {
+      rules = rules.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r);
+      saveRules();
+      render();
+    }
+
+    // Duplicate rule
+    function duplicateRule(id) {
+      const original = rules.find(r => r.id === id);
+      if (original) {
+        const duplicate = {
+          ...original,
+          id: `CR-${Date.now()}`,
+          name: `${original.name} (Copy)`,
+        };
+        rules.push(duplicate);
+        saveRules();
+        render();
+        showToast('Rule duplicated');
+      }
+    }
+
+    // Export rules
+    function exportRules() {
+      const dataStr = JSON.stringify(rules, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `sentinel-rules-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast('Rules exported successfully');
+    }
+
+    // Add preset rule
+    function addPreset(index) {
+      const preset = presetRules[index];
+      if (preset) {
+        addRule(preset);
+      }
+    }
+
+    // Bind events
+    function bindEvents() {
+      // Search
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        searchQuery = e.target.value;
+        renderRules();
+      });
+
+      // Filter chips
+      document.getElementById('filter-chips').addEventListener('click', (e) => {
+        const chip = e.target.closest('.filter-chip');
+        if (chip) {
+          document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          activeCategory = chip.dataset.category;
+          renderRules();
+        }
+      });
+
+      // Stats toggle
+      document.getElementById('stats-btn').addEventListener('click', () => {
+        showStats = !showStats;
+        document.getElementById('stats-btn').classList.toggle('active', showStats);
+        render();
+      });
+
+      // Export
+      document.getElementById('export-btn').addEventListener('click', exportRules);
+
+      // New rule button
+      document.getElementById('new-rule-btn').addEventListener('click', () => {
+        showCreateForm = true;
+        render();
+        document.getElementById('new-rule-name').focus();
+      });
+
+      // Cancel create
+      document.getElementById('cancel-create').addEventListener('click', () => {
+        showCreateForm = false;
+        render();
+        clearForm();
+      });
+
+      // Save rule
+      document.getElementById('save-rule').addEventListener('click', () => {
+        const name = document.getElementById('new-rule-name').value.trim();
+        const pattern = document.getElementById('new-rule-pattern').value.trim();
+        const cwe = document.getElementById('new-rule-cwe').value.trim() || 'CWE-20';
+        const severity = document.getElementById('new-rule-severity').value;
+        const owasp = document.getElementById('new-rule-owasp').value.trim() || 'A03:2021-Injection';
+        const remediation = document.getElementById('new-rule-remediation').value.trim();
+
+        if (!name || !pattern) {
+          showToast('Please fill in name and pattern', 'error');
+          return;
+        }
+
+        addRule({
+          name,
+          pattern,
+          cwe,
+          severity,
+          owaspCategory: owasp,
+          message: '',
+          remediationTip: remediation,
+          language: 'all',
+        });
+
+        showCreateForm = false;
+        clearForm();
+        render();
+      });
+
+      // Rules list actions
+      rulesList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (btn) {
+          const action = btn.dataset.action;
+          const id = btn.dataset.id;
+          
+          switch (action) {
+            case 'toggle':
+              toggleRule(id);
+              break;
+            case 'delete':
+              if (confirm('Are you sure you want to delete this rule?')) {
+                deleteRule(id);
+              }
+              break;
+            case 'duplicate':
+              duplicateRule(id);
+              break;
+            case 'test':
+              const rule = rules.find(r => r.id === id);
+              if (rule) {
+                const count = testPattern(rule.pattern);
+                showToast(count > 0 ? `Found ${count} matches` : 'No matches found');
+              }
+              break;
+          }
+        }
+      });
+
+      // Preset chips
+      document.querySelectorAll('.preset-chip').forEach((chip, index) => {
+        chip.addEventListener('click', () => addPreset(index));
+      });
+
+      // Apply rules
+      applyBtn.addEventListener('click', () => {
+        const enabledRules = rules.filter(r => r.enabled);
+        showToast(`Applied ${enabledRules.length} rules to workspace`);
+      });
+    }
+
+    // Clear form
+    function clearForm() {
+      document.getElementById('new-rule-name').value = '';
+      document.getElementById('new-rule-pattern').value = '';
+      document.getElementById('new-rule-cwe').value = '';
+      document.getElementById('new-rule-severity').value = 'HIGH';
+      document.getElementById('new-rule-owasp').value = '';
+      document.getElementById('new-rule-remediation').value = '';
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>
