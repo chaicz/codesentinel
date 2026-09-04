@@ -100,7 +100,7 @@ Before installing Sentinel, ensure you have the following installed on your syst
 ```bash
 # Open Command Prompt or PowerShell
 cd D:\
-git clone https://github.com/YOUR_USERNAME/codesentinel.git
+git clone https://github.com/chaicz/codesentinel.git
 cd codesentinel
 ```
 
