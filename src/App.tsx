@@ -1,3 +1,46 @@
+/**
+ * ============================================================================
+ * FILE: App.tsx
+ * TYPE: Root Application Component
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Main application entry point that orchestrates all features of the
+ * CodeSentinel IDE. Manages global state, authentication, and coordinates
+ * communication between all child components.
+ * 
+ * KEY RESPONSIBILITIES:
+ * 1. Authentication - Login/logout, session management, admin access
+ * 2. File Management - Create, edit, switch between code files
+ * 3. Security Scanning - Live scanning, AI-powered analysis, vulnerability detection
+ * 4. Code Execution - Run code with input/output handling
+ * 5. AI Copilot - Integration with AI for security assistance
+ * 6. Cloud Audit - AWS/Azure/GCP security configuration checks
+ * 7. Custom Rules - User-defined security patterns
+ * 8. Reports - Export audit reports in multiple formats (HTML, JSON, SARIF)
+ * 9. Admin Panel - User management for database-connected environments
+ * 
+ * STATE MANAGEMENT:
+ * - authUser: Current authenticated user (null if not logged in)
+ * - files: Array of CodeFile objects with content and vulnerabilities
+ * - activeFileId: Currently selected file
+ * - isScanning/isFixing: Loading states for async operations
+ * - executionResult: Output from code execution
+ * - selectedVulnerability: Currently selected vulnerability for details
+ * 
+ * API ENDPOINTS (Backend):
+ * - POST /api/auth/login - User login
+ * - POST /api/auth/register - User registration
+ * - POST /api/auth/logout - User logout
+ * - GET /api/auth/me - Get current session
+ * - POST /api/execute - Execute code
+ * - POST /api/analyze-code - AI security analysis
+ * - POST /api/suggest-fix - AI-powered fix suggestions
+ * - GET/POST /api/admin/* - Admin operations
+ * 
+ * ============================================================================
+ */
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PRESET_FILES } from './data/presetFiles';
 import { CodeFile, Vulnerability, CustomRule, ExecutionResult, AuthUser, AIProvider, AI_PROVIDERS, Project } from './types';
@@ -19,6 +62,7 @@ import { AISettingsModal } from './components/AISettingsModal';
 import { Dashboard } from './components/Dashboard';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { ProjectManager } from './components/ProjectManager';
+import { AdminPanel } from './components/AdminPanel';
 
 export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -61,6 +105,7 @@ export default function App() {
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
   // Custom Rules
   const [customRules, setCustomRules] = useState<CustomRule[]>([]);
@@ -348,6 +393,9 @@ export default function App() {
         onOpenDashboard={() => setIsDashboardOpen(true)}
         isDashboardOpen={isDashboardOpen}
         onOpenProjectManager={() => setIsProjectManagerOpen(true)}
+        onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        isAdminPanelOpen={isAdminPanelOpen}
+        isAdmin={authUser?.role === 'admin'}
       />
 
       {/* Main Layout */}
@@ -441,7 +489,7 @@ export default function App() {
         currentConfig={{
           provider: (currentAIConfig as any).provider || 'gemini',
           apiKey: (currentAIConfig as any).apiKey || '',
-          model: (currentAIConfig as any).model || 'gemini-2.5-flash',
+          model: (currentAIConfig as any).model || 'gemini-3.6-flash',
         }}
         onSave={handleSaveAISettings}
       />
@@ -464,6 +512,12 @@ export default function App() {
         onClose={() => setIsProjectManagerOpen(false)}
         currentFile={{ name: activeFile.name, language: activeFile.language, content: activeFile.content }}
         onLoadProject={handleLoadProject}
+      />
+
+      <AdminPanel
+        isOpen={isAdminPanelOpen}
+        onClose={() => setIsAdminPanelOpen(false)}
+        currentUser={{ id: authUser?.id || '', username: authUser?.username || '', role: authUser?.role }}
       />
     </div>
   );

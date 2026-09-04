@@ -20,11 +20,12 @@ USE sentinel;
 CREATE TABLE IF NOT EXISTS users (
   id             VARCHAR(36)   PRIMARY KEY COMMENT '[DESIGN] UUID primary key — unique per user account',
   username       VARCHAR(32)   NOT NULL UNIQUE COMMENT '[DESIGN] User handle (3–32 chars, a-z/0-9/_), shown in the UI header',
-  password_hash  VARCHAR(192) NOT NULL COMMENT '[CORE FUNCTION] scrypt hash — salt:hex (16 bytes) + derived key (64 bytes), never stored in plaintext',
+  email          VARCHAR(255)  DEFAULT '' COMMENT '[DESIGN] User email address for notifications and recovery',
+  password_hash  VARCHAR(192)  NOT NULL COMMENT '[CORE FUNCTION] scrypt hash — salt:hex (16 bytes) + derived key (64 bytes), never stored in plaintext',
   created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '[DESIGN] Account creation timestamp, displayed in profile / audit logs',
   ai_provider    VARCHAR(20)   DEFAULT 'gemini' COMMENT '[DESIGN] Active AI provider — gemini | openai | anthropic — set in AI Settings modal',
   ai_api_key    VARCHAR(255)  DEFAULT '' COMMENT '[DESIGN] Encrypted API key for the chosen provider — stored per-user, used by aiService.ts',
-  ai_model       VARCHAR(64)   DEFAULT 'gemini-2.5-flash' COMMENT '[DESIGN] Model identifier string passed to the AI provider on every request',
+  ai_model       VARCHAR(64)   DEFAULT 'gemini-2.0-flash' COMMENT '[DESIGN] Model identifier string passed to the AI provider on every request',
   INDEX idx_username (username) COMMENT '[CORE FUNCTION] Indexed for O(1) lookup during login and registration'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='[CORE FUNCTION] User identity and preferences store';
 
@@ -73,10 +74,11 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- The hash below is pre-computed so you don't need to register.
 -- It was generated with:  crypto.scrypt('testpass123', randomSalt, 64)
 -- Replace the hex string below with output from your own setup if needed.
-INSERT INTO users (id, username, password_hash, created_at, ai_provider, ai_api_key, ai_model)
+INSERT INTO users (id, username, email, password_hash, created_at, ai_provider, ai_api_key, ai_model)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
   'testuser',
+  'testuser@example.com',
   -- Pre-computed scrypt hash for 'testpass123'
   -- Salt:     00000000000000000000000000000000 (16 zero bytes)
   -- Key hash: 2e61a4b9b6bc6800d4f3a74790f561d239578210e8eb47a7ba078bd4dc48823240fe0ae234a5513434c2af819b944efcbeba37b390a57c3666a7a04ea78f335a
@@ -84,7 +86,7 @@ VALUES (
   NOW(),
   'gemini',
   '',
-  'gemini-2.5-flash'
+  'gemini-2.0-flash'
 )
 ON DUPLICATE KEY UPDATE id = id;  -- Safe: skips if user already exists
 

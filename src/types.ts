@@ -1,3 +1,39 @@
+/**
+ * ============================================================================
+ * FILE: types.ts
+ * TYPE: TypeScript Type Definitions
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Central location for all TypeScript type definitions used throughout
+ * the CodeSentinel application.
+ * 
+ * KEY TYPES:
+ * - AIProvider: Supported AI providers (gemini, openai, anthropic)
+ * - AIProviderConfig: AI configuration with provider, apiKey, model
+ * - AI_PROVIDERS: Array of available AI providers with model options
+ * - Severity: Vulnerability severity levels (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+ * - OWASPCategory: OWASP Top 10 2021 categories
+ * - CodeFile: Represents a code file with content and vulnerabilities
+ * - Vulnerability: Security vulnerability with all metadata
+ * - CustomRule: User-defined security pattern
+ * - ExecutionResult: Code execution output
+ * - AuthUser: Authenticated user object
+ * 
+ * AI PROVIDERS:
+ * - Google Gemini (gemini) - Default provider
+ * - OpenAI GPT-4 (openai)
+ * - Anthropic Claude (anthropic)
+ * 
+ * SEVERITY LEVELS:
+ * - CRITICAL: Immediate action required (CVSS 9.0-10.0)
+ * - HIGH: High priority fix (CVSS 7.0-8.9)
+ * - MEDIUM: Should be addressed (CVSS 4.0-6.9)
+ * - LOW: Minor issues (CVSS 0.1-3.9)
+ * - INFO: Informational only
+ * ============================================================================
+ */
+
 // AI Provider Types
 export type AIProvider = 'gemini' | 'openai' | 'anthropic';
 
@@ -27,12 +63,13 @@ export const AI_PROVIDERS: {
     icon: '✨',
     description: 'Fast, multimodal AI from Google',
     models: [
+      { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', description: 'Latest fast & powerful model' },
       { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', description: 'Fast & affordable, great for code analysis' },
       { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', description: 'Most capable, best for complex reasoning' },
       { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', description: 'Balanced speed and quality' },
       { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', description: 'Large context window (1M tokens)' },
     ],
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel: 'gemini-2.0-flash',
   },
   {
     id: 'openai',
@@ -43,6 +80,7 @@ export const AI_PROVIDERS: {
       { id: 'gpt-4o', label: 'GPT-4o', description: 'Fast, capable multimodal model' },
       { id: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Lightweight and cost-effective' },
       { id: 'gpt-4-turbo', label: 'GPT-4 Turbo', description: 'Powerful reasoning and code skills' },
+      { id: 'o1-preview', label: 'o1 Preview', description: 'Advanced reasoning model' },
       { id: 'o1-mini', label: 'o1 Mini', description: 'Fast reasoning model for code' },
     ],
     defaultModel: 'gpt-4o',
@@ -64,7 +102,7 @@ export const AI_PROVIDERS: {
 export const DEFAULT_AI_CONFIG: AIProviderConfig = {
   provider: 'gemini',
   apiKey: '',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-2.0-flash',
 };
 
 // Severity Type
@@ -153,6 +191,8 @@ export interface AuthUser {
   username: string;
   email?: string;
   avatar?: string;
+  role?: 'admin' | 'user';
+  isActive?: boolean;
   aiConfig?: AIProviderConfig;
   createdAt?: string;
 }

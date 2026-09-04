@@ -1,3 +1,41 @@
+/**
+ * ============================================================================
+ * FILE: sarifGenerator.ts
+ * TYPE: SARIF Report Generator Utility
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Converts CodeSentinel vulnerability findings into SARIF (Static Analysis
+ * Results Interchange Format) 2.1.0 format for CI/CD integration.
+ * 
+ * SARIF IS:
+ * An OASIS standard format for sharing security analysis results between
+ * different tools and platforms. Supported by GitHub, Azure DevOps, and others.
+ * 
+ * KEY FUNCTION:
+ * - generateSarifReport(file, vulnerabilities): Converts findings to SARIF JSON
+ * 
+ * OUTPUT STRUCTURE:
+ * - version: SARIF 2.1.0
+ * - runs[].tool.driver: Tool info (SecureCode-AI)
+ * - runs[].results: Array of vulnerability findings
+ * - Each result includes: location, severity, CWE, description, remediation
+ * 
+ * INTEGRATIONS:
+ * - GitHub Code Scanning: github/codeql-action/upload-sarif
+ * - Azure DevOps: SARIF artifact uploads
+ * - GitLab SAST: Native SARIF support
+ * 
+ * SEVERITY MAPPING:
+ * - CRITICAL/HIGH → "error"
+ * - MEDIUM/LOW/INFO → "warning"
+ * 
+ * PROPERTIES:
+ * - securitySeverity: CVSS score as string
+ * - tags: ["security", OWASP category, severity, CWE]
+ * ============================================================================
+ */
+
 import { Vulnerability, CodeFile } from '../types';
 
 export function generateSarifReport(file: CodeFile, vulnerabilities: Vulnerability[]): object {

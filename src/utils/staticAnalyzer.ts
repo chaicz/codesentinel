@@ -1,3 +1,58 @@
+/**
+ * ============================================================================
+ * FILE: staticAnalyzer.ts
+ * TYPE: Static Security Analysis Engine
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Performs static code analysis to detect security vulnerabilities using
+ * pattern-based rules and regex matching. This is the core security scanning
+ * engine that powers CodeSentinel's vulnerability detection.
+ * 
+ * KEY FUNCTIONS:
+ * - runStaticSecurityScan(code, language): Main scan function
+ * - calculateSecurityScore(vulnerabilities): Computes 0-100 security score
+ * 
+ * SECURITY RULES (STATIC_SECURITY_RULES):
+ * - SQL Injection (CWE-89) - Python
+ * - SSRF (CWE-918) - Python
+ * - Hardcoded Secrets (CWE-798)
+ * - Eval/Exec Usage (CWE-95)
+ * - Path Traversal (CWE-22)
+ * - XSS (CWE-79) - Multiple languages
+ * - Command Injection (CWE-78)
+ * - Insecure Dependencies
+ * - Weak Cryptography
+ * - And more...
+ * 
+ * RULE STRUCTURE:
+ * Each rule includes:
+ * - id: Unique rule identifier
+ * - name: Human-readable rule name
+ * - languages: Applicable programming languages
+ * - severity: CRITICAL/HIGH/MEDIUM/LOW
+ * - owaspCategory: OWASP Top 10 2021 category
+ * - cwe: CWE identifier
+ * - cvssScore: CVSS v3 score
+ * - regex: Pattern to detect vulnerability
+ * - description: What the vulnerability is
+ * - impact: Why it matters
+ * - exploitScenario: How an attacker could exploit it
+ * - remediation: How to fix it
+ * - confidence: Detection confidence level
+ * 
+ * SCORING ALGORITHM:
+ * - CRITICAL: -25 points each
+ * - HIGH: -15 points each
+ * - MEDIUM: -8 points each
+ * - LOW: -3 points each
+ * - Score clamped to 0-100 range
+ * 
+ * LANGUAGES SUPPORTED:
+ * Python, JavaScript, TypeScript, Java, C, C++, Go, Ruby, PHP, SQL, Bash, YAML, Dockerfile
+ * ============================================================================
+ */
+
 import { Vulnerability, OWASPCategory, Severity } from '../types';
 
 interface RuleDefinition {

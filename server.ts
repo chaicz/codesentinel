@@ -1,3 +1,54 @@
+/**
+ * ============================================================================
+ * FILE: server.ts
+ * TYPE: Express Backend Server
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Main Express.js backend server providing API endpoints for:
+ * - Authentication (login, register, logout, session management)
+ * - Code execution (sandboxed code runner)
+ * - AI-powered security analysis and remediation
+ * - Admin user management
+ * 
+ * API ENDPOINTS:
+ * 
+ * AUTHENTICATION (/api/auth/*):
+ * - POST /api/auth/register - User registration
+ * - POST /api/auth/login - User login
+ * - POST /api/auth/logout - User logout
+ * - GET /api/auth/me - Get current session
+ * - POST /api/auth/ai-settings - Update AI configuration
+ * 
+ * CODE EXECUTION (/api/execute):
+ * - POST /api/execute - Run code in sandboxed subprocess
+ * 
+ * AI SERVICES (/api/*):
+ * - POST /api/analyze-code - AI security analysis
+ * - POST /api/suggest-fix - AI-powered vulnerability fixes
+ * - POST /api/simulate-exploit - Exploit simulation
+ * - POST /api/copilot-chat - AI chat assistant
+ * 
+ * ADMIN (/api/admin/*):
+ * - GET /api/admin/users - List all users
+ * - GET /api/admin/stats - Get user statistics
+ * - POST /api/admin/password/reset - Reset user password
+ * - POST /api/admin/user/delete - Delete user
+ * - POST /api/admin/user/toggle-active - Toggle user active status
+ * 
+ * DATABASE:
+ * - MySQL with connection pooling
+ * - Tables: users, sessions
+ * - Passwords hashed with scrypt
+ * 
+ * SECURITY:
+ * - HttpOnly cookie sessions
+ * - CORS configured for frontend
+ * - Rate limiting on auth endpoints
+ * - Admin routes require admin role
+ * ============================================================================
+ */
+
 import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -5,6 +56,7 @@ import { createServer as createViteServer } from 'vite';
 import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import os from 'os';
+import mysql from 'mysql2/promise';
 import {
   apiAuthGate,
   loginHandler,
@@ -12,9 +64,19 @@ import {
   meHandler,
   registerHandler,
   requireAuth,
+  requireAdmin,
   updateAISettingsHandler,
   initializeDatabase,
   type AuthedRequest,
+  getAllUsersHandler,
+  getInactiveUsersHandler,
+  resetUserPasswordHandler,
+  updateUserEmailHandler,
+  deleteUserHandler,
+  toggleUserActiveHandler,
+  bulkDeleteInactiveUsersHandler,
+  promoteToAdminHandler,
+  getAdminStatsHandler,
 } from './auth';
 import {
   analyzeCodeWithAI,
@@ -48,6 +110,106 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// --- Admin endpoints (require admin role) ---
+// Get all users
+app.get('/api/admin/users', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => getAllUsersHandler(req, res).catch(next))); 
+});
+
+// Get inactive users
+app.get('/api/admin/users/inactive', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => getInactiveUsersHandler(req, res).catch(next))); 
+});
+
+// Get admin statistics
+app.get('/api/admin/stats', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => getAdminStatsHandler(req, res).catch(next))); 
+});
+
+// Reset user password
+app.post('/api/admin/password/reset', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => resetUserPasswordHandler(req, res).catch(next))); 
+});
+
+// Update user email
+app.post('/api/admin/email/update', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => updateUserEmailHandler(req, res).catch(next))); 
+});
+
+// Delete user
+app.post('/api/admin/user/delete', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => deleteUserHandler(req, res).catch(next))); 
+});
+
+// Toggle user active status
+app.post('/api/admin/user/toggle-active', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => toggleUserActiveHandler(req, res).catch(next))); 
+});
+
+// Bulk delete inactive users
+app.post('/api/admin/users/bulk-delete', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => bulkDeleteInactiveUsersHandler(req, res).catch(next))); 
+});
+
+// Promote user to admin
+app.post('/api/admin/user/promote', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, () => promoteToAdminHandler(req, res).catch(next))); 
+});
+
+// Admin change own password
+app.post('/api/admin/change-password', (req, res, next) => { 
+  requireAuth(req, res, () => requireAdmin(req, res, async (req: AuthedRequest, res: express.Response) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.user?.id;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current and new password are required' });
+      }
+      
+      if (newPassword.length < 8 || newPassword.length > 128) {
+        return res.status(400).json({ error: 'Password must be 8-128 characters' });
+      }
+      
+      // Get current user from database
+      const [rows] = await (await import('./auth')).getPool().execute<mysql.RowDataPacket[]>(
+        'SELECT password_hash FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      if (!rows[0]) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Verify current password
+      const verifyResult = await (await import('./auth')).verifyPassword(currentPassword, rows[0].password_hash);
+      if (!verifyResult) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+      
+      // Hash new password
+      const newHash = await (await import('./auth')).hashPassword(newPassword);
+      
+      // Update password
+      await (await import('./auth')).getPool().execute(
+        'UPDATE users SET password_hash = ? WHERE id = ?',
+        [newHash, userId]
+      );
+      
+      // Invalidate all sessions for this user
+      await (await import('./auth')).getPool().execute(
+        'DELETE FROM sessions WHERE user_id = ?',
+        [userId]
+      );
+      
+      res.json({ success: true, message: 'Password changed successfully. Please login again.' });
+    } catch (err: any) {
+      console.error('Change password error:', err);
+      res.status(500).json({ error: 'Failed to change password' });
+    }
+  }).catch(next)); 
+});
+
 // Deep AI Security Code Analysis
 app.post('/api/analyze-code', async (req: AuthedRequest, res) => {
   try {
@@ -67,7 +229,11 @@ app.post('/api/analyze-code', async (req: AuthedRequest, res) => {
     return res.json({ ...result, aiPowered: true });
   } catch (error: any) {
     console.error('AI code analysis error:', error);
-    return res.status(500).json({ error: error.message || 'AI analysis failed', fallback: true });
+    let errMsg = error.message || 'AI analysis failed';
+    if (errMsg.includes('no longer available') || errMsg.includes('404') || errMsg.includes('NOT_FOUND')) {
+      errMsg = 'Model no longer available. Please go to Settings > AI Settings and select a newer model.';
+    }
+    return res.status(500).json({ error: errMsg, fallback: true });
   }
 });
 
@@ -85,7 +251,11 @@ app.post('/api/suggest-fix', async (req: AuthedRequest, res) => {
     return res.json(result);
   } catch (error: any) {
     console.error('Fix suggestion error:', error);
-    return res.status(500).json({ error: error.message || 'Fix generation failed' });
+    let errMsg = error.message || 'Fix generation failed';
+    if (errMsg.includes('no longer available') || errMsg.includes('404') || errMsg.includes('NOT_FOUND')) {
+      errMsg = 'Model no longer available. Please go to Settings > AI Settings and select a newer model.';
+    }
+    return res.status(500).json({ error: errMsg });
   }
 });
 
@@ -128,8 +298,8 @@ app.post('/api/copilot-chat', async (req: AuthedRequest, res) => {
     const config = req.user?.aiConfig;
 
     if (!config?.apiKey) {
-      return res.json({
-        reply: "I am SecureCode Copilot. Configure an AI provider in Settings > AI to unlock full contextual capabilities. I can still assist with static analysis and OWASP guidelines.",
+      return res.status(400).json({
+        error: 'AI API key not configured. Please go to Settings > AI Settings and enter your API key.',
       });
     }
 
@@ -137,7 +307,20 @@ app.post('/api/copilot-chat', async (req: AuthedRequest, res) => {
     return res.json(result);
   } catch (error: any) {
     console.error('Copilot chat error:', error);
-    return res.status(500).json({ error: error.message || 'Copilot chat failed' });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Copilot chat failed. Please check your API key and try again.';
+    if (error.message?.includes('API key')) {
+      errorMessage = 'Invalid API key. Please check your API key in Settings > AI Settings.';
+    } else if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
+      errorMessage = 'API rate limit exceeded. Please wait a moment and try again.';
+    } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+      errorMessage = 'Network error connecting to AI service. Check your internet connection.';
+    } else if (error.message?.includes('no longer available') || error.message?.includes('404') || error.message?.includes('NOT_FOUND')) {
+      errorMessage = 'Model no longer available. Please go to Settings > AI Settings and select a newer model (e.g., Gemini 3.6 Flash).';
+    }
+    
+    return res.status(500).json({ error: errorMessage });
   }
 });
 

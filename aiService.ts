@@ -1,3 +1,51 @@
+/**
+ * ============================================================================
+ * FILE: aiService.ts
+ * TYPE: AI Service Integration Module
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Provides unified AI-powered security analysis capabilities using
+ * multiple AI providers (Google Gemini, OpenAI GPT-4, Anthropic Claude).
+ * 
+ * SUPPORTED AI PROVIDERS:
+ * - Google Gemini: Fast, cost-effective, good for code analysis
+ * - OpenAI GPT-4: Strong reasoning and security understanding
+ * - Anthropic Claude: Excellent for detailed security analysis
+ * 
+ * KEY FUNCTIONS:
+ * - analyzeCodeWithAI(config, params): Deep security analysis of code
+ * - suggestFixWithAI(config, params): Generate remediation code
+ * - simulateExploitWithAI(config, params): Simulate attack scenarios
+ * - copilotChatWithAI(config, params): Interactive security assistant
+ * 
+ * ANALYZE CODE:
+ * - Input: code, language, filename, existing static findings
+ * - Output: summary, securityScore (0-100), detailed findings
+ * - Uses AI to identify vulnerabilities, explain risks, suggest fixes
+ * 
+ * SUGGEST FIX:
+ * - Input: code, language, filename, specific vulnerability
+ * - Output: fullRemediatedCode, patchSnippet, explanation
+ * - Generates corrected code with security improvements
+ * 
+ * SIMULATE EXPLOIT:
+ * - Input: code, vulnerability, language, optional custom payload
+ * - Output: testPayload, attackVector, vulnerableResponse, remediatedResponse
+ * - Shows how vulnerability could be exploited
+ * 
+ * COPILOT CHAT:
+ * - Input: messages array, activeFile, selectedVulnerability
+ * - Output: AI reply string
+ * - Context-aware security assistant
+ * 
+ * ERROR HANDLING:
+ * - Automatic fallback to next provider if one fails
+ * - Rate limiting handled gracefully
+ * - Clear error messages for missing API keys
+ * ============================================================================
+ */
+
 import { GoogleGenAI, Type } from '@google/genai';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
@@ -151,7 +199,7 @@ async function callGemini(config: AIProviderConfig, prompt: string, structured: 
   if (!config.apiKey) throw new Error('Gemini API key not configured.');
 
   const ai = new GoogleGenAI({ apiKey: config.apiKey });
-  const model = config.model || 'gemini-2.5-flash';
+  const model = config.model || 'gemini-2.0-flash';
 
   if (structured) {
     const response = await ai.models.generateContent({
@@ -307,6 +355,7 @@ function buildCopilotPrompt(p: {
   messages: { sender: string; text: string }[];
   activeFile?: { name: string; language: string; content: string };
   selectedVulnerability?: any;
+  userRequest?: string;
 }): string {
   const context = `Active File: ${p.activeFile?.name || 'Untitled'} (${p.activeFile?.language || 'plain'})
 \`\`\`${p.activeFile?.language || ''}
@@ -317,13 +366,45 @@ ${p.selectedVulnerability ? `Currently inspecting: ${p.selectedVulnerability.tit
 
   const history = (p.messages || []).map((m) => `${m.sender.toUpperCase()}: ${m.text}`).join('\n\n');
 
-  return `You are SecureCode AI Copilot, a conversational Application Security Architect. Help developers with code security, OWASP Top 10, CWE, SANS Top 25, cryptography, cloud hardening, and zero-trust design.
+  // Detect if user wants to build something
+  const buildKeywords = ['build', 'create', 'make', 'write', 'generate', 'implement', 'new function', 'new api', 'new endpoint', 'new handler'];
+  const isBuildRequest = p.userRequest && buildKeywords.some(kw => p.userRequest!.toLowerCase().includes(kw));
+
+  const buildInstructions = isBuildRequest ? `
+IMPORTANT - FUNCTION BUILDING GUIDELINES:
+When helping the user build a function:
+1. Ask clarifying questions about requirements (input, output, authentication, validation)
+2. Start with a clear specification of what the function should do
+3. Write secure, production-ready code with:
+   - Input validation and sanitization
+   - Parameterized queries for database operations
+   - Proper error handling
+   - Authentication/authorization checks where needed
+   - Rate limiting hints
+   - Logging and monitoring recommendations
+4. Explain each security measure implemented
+5. Provide usage examples
+6. Include the complete code in a code block with the appropriate language
+
+Keep responses conversational but focus on delivering secure, working code.` : '';
+
+  return `You are SecureCode AI Copilot, a conversational Application Security Architect specializing in helping developers build secure software.
+
+Your expertise includes:
+- Secure coding practices and defense-in-depth
+- OWASP Top 10, CWE, SANS Top 25 vulnerabilities
+- Authentication, authorization, and identity management
+- Input validation and sanitization
+- Cryptography and secrets management
+- Cloud-native security and container hardening
+- Zero-trust architecture patterns
 
 Context:
 ${context}
 
 History:
 ${history}
+${buildInstructions}
 
-Provide a helpful, precise response with code snippets where helpful.`;
+Provide a helpful, precise response with code snippets where helpful. Use code blocks with proper language tags for all code examples.`;
 }

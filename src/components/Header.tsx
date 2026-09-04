@@ -55,6 +55,7 @@ import {
   Zap,
   ChevronDown,
   FolderOpen,
+  Shield,
 } from 'lucide-react';
 import { AIProvider, AuthUser, CodeFile, Vulnerability } from '../types';
 
@@ -85,6 +86,9 @@ interface HeaderProps {
   onOpenDashboard?: () => void;
   isDashboardOpen?: boolean;
   onOpenProjectManager?: () => void;
+  onOpenAdminPanel?: () => void;
+  isAdminPanelOpen?: boolean;
+  isAdmin?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -114,6 +118,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenDashboard,
   isDashboardOpen,
   onOpenProjectManager,
+  onOpenAdminPanel,
+  isAdminPanelOpen,
+  isAdmin,
 }) => {
   const criticalCount = vulnerabilities.filter((v) => v.severity === 'CRITICAL').length;
   const highCount = vulnerabilities.filter((v) => v.severity === 'HIGH').length;
@@ -373,6 +380,22 @@ export const Header: React.FC<HeaderProps> = ({
       {/* User */}
       {currentUser && (
         <div className="flex items-center gap-2 pl-2 border-l border-[#27272A]">
+          {isAdmin && onOpenAdminPanel && (
+            <button
+              id="btn-admin-panel"
+              onClick={onOpenAdminPanel}
+              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md transition-all cursor-pointer"
+              style={{ 
+                backgroundColor: isAdminPanelOpen ? 'rgba(251,191,36,0.15)' : 'transparent',
+                color: isAdminPanelOpen ? '#fbbf24' : 'var(--text-muted)',
+                border: isAdminPanelOpen ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
+              }}
+              title="Admin Panel"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">Admin</span>
+            </button>
+          )}
           <span className="text-xs font-medium hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
             {currentUser.username}
           </span>

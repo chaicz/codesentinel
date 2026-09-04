@@ -1,3 +1,47 @@
+/**
+ * ============================================================================
+ * FILE: presetFiles.ts
+ * TYPE: Preset Code Files & Language Templates
+ * ============================================================================
+ * 
+ * PURPOSE:
+ * Provides starter code files and language-specific templates for the
+ * CodeSentinel IDE. Contains sample vulnerable code for demonstration
+ * and template code for different programming languages.
+ * 
+ * PRESET FILES:
+ * - starter-main.py: Default workspace file with welcome message
+ * 
+ * LANGUAGE TEMPLATES (LANGUAGE_STARTERS):
+ * - python: Basic Python script
+ * - javascript: Node.js script
+ * - typescript: TypeScript with interfaces
+ * - c: C program
+ * - cpp: C++ program
+ * - java: Java class
+ * - csharp: C# program
+ * - go: Go program
+ * - php: PHP script
+ * - ruby: Ruby script
+ * - rust: Rust program
+ * - sql: SQL queries
+ * - bash: Shell script
+ * - yaml: YAML configuration
+ * - json: JSON data
+ * - html: HTML page
+ * 
+ * SAMPLE VULNERABLE CODE:
+ * - demo-python-sql.py: Python with SQL injection
+ * - demo-python-ssrf.py: Python with SSRF vulnerability
+ * - demo-javascript-xss.js: JavaScript with XSS
+ * - demo-python-cmd.py: Command injection example
+ * 
+ * USAGE:
+ * Import PRESET_FILES for initial workspace
+ * Import LANGUAGE_STARTERS for new file templates
+ * ============================================================================
+ */
+
 import { CodeFile } from '../types';
 
 export const PRESET_FILES: CodeFile[] = [
