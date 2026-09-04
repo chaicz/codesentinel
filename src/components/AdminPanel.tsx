@@ -29,7 +29,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Users, Shield, Trash2, Key, AlertTriangle, 
   Search, RefreshCw, ChevronRight, X, Check, Loader2,
-  BarChart3, UserCheck, UserX, Filter
+  BarChart3, UserCheck, UserX, Filter, Clock
 } from 'lucide-react';
 
 interface AdminUser {
@@ -69,6 +69,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   
   // Search and filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,6 +99,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         return;
       }
       
+      if (usersRes.status === 401) {
+        setError('Session expired. Please log in again.');
+        return;
+      }
+      
       if (!usersRes.ok || !statsRes.ok) {
         throw new Error('Failed to fetch data');
       }
@@ -107,6 +113,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       
       setUsers(usersData.users || []);
       setStats(statsData.stats || null);
+      setIsDemoMode(!!usersData.isDemo || !!statsData.isDemo);
+      
+      // Show info message if using demo mode (no database)
+      if (usersData.isDemo || statsData.isDemo) {
+        setSuccess(usersData.message || statsData.message || 'Database not configured. Running in demo mode.');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load admin data');
     } finally {
@@ -330,6 +342,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       color="#8b5cf6"
                     />
                   </div>
+                  
+                  {stats.totalUsers === 0 && (
+                    <div 
+                      className="p-4 rounded-lg border"
+                      style={{ 
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                        borderColor: 'rgba(59, 130, 246, 0.3)' 
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 mt-0.5">
+                          <AlertTriangle className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-blue-400 mb-1">
+                            Database Not Connected
+                          </h4>
+                          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                            <strong>Built-in admin is active.</strong> New registered users will appear here after connecting to MySQL.
+                            <br /><br />
+                            To enable full database functionality:
+                          </p>
+                          <ul className="text-xs mt-2 space-y-1" style={{ color: 'var(--text-muted)' }}>
+                            <li>1. Start XAMPP and ensure MySQL is running</li>
+                            <li>2. Create a database named <code className="px-1 py-0.5 rounded bg-slate-800 text-amber-400">'sentinel'</code></li>
+                            <li>3. Update <code className="px-1 py-0.5 rounded bg-slate-800 text-amber-400">.env</code> with your MySQL credentials</li>
+                            <li>4. Restart the server with <code className="px-1 py-0.5 rounded bg-slate-800 text-amber-400">npm run dev</code></li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -435,21 +479,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center justify-end gap-1">
-                                {/* Reset Password */}
+                                {/* Reset Password - disabled for built-in admin */}
                                 <ActionButton
                                   icon={Key}
-                                  title="Reset Password"
+                                  title={user.id === 'builtin-admin' ? 'Cannot modify built-in admin' : 'Reset Password'}
                                   onClick={() => setActionModal({ type: 'password', user })}
+                                  disabled={user.id === 'builtin-admin'}
                                 />
-                                {/* Toggle Active */}
+                                {/* Toggle Active - disabled for built-in admin */}
                                 <ActionButton
                                   icon={user.isActive ? UserX : UserCheck}
-                                  title={user.isActive ? 'Deactivate' : 'Activate'}
+                                  title={user.id === 'builtin-admin' ? 'Cannot modify built-in admin' : (user.isActive ? 'Deactivate' : 'Activate')}
                                   onClick={() => setActionModal({ type: 'toggle', user })}
                                   variant={user.isActive ? 'warning' : 'success'}
+                                  disabled={user.id === 'builtin-admin'}
                                 />
-                                {/* Delete */}
-                                {user.id !== currentUser.id && (
+                                {/* Delete - disabled for built-in admin and self */}
+                                {user.id !== currentUser.id && user.id !== 'builtin-admin' && (
                                   <ActionButton
                                     icon={Trash2}
                                     title="Delete User"
@@ -466,7 +512,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                   {filteredUsers.length === 0 && (
                     <div className="text-center py-8" style={{ color: 'var(--text-muted)' }}>
-                      No users found matching your criteria.
+                      {isDemoMode ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                            <Users className="w-6 h-6 text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-white mb-1">No Users Found</p>
+                            <p className="text-xs">Connect to MySQL to enable user management</p>
+                          </div>
+                        </div>
+                      ) : (
+                        'No users found matching your criteria.'
+                      )}
                     </div>
                   )}
                 </div>
@@ -592,12 +650,14 @@ function ActionButton({
   icon: Icon, 
   title, 
   onClick, 
-  variant = 'default' 
+  variant = 'default',
+  disabled = false 
 }: { 
   icon: any; 
   title: string; 
   onClick: () => void; 
   variant?: 'default' | 'warning' | 'danger' | 'success';
+  disabled?: boolean;
 }) {
   const colors = {
     default: 'var(--text-muted)',
@@ -610,8 +670,9 @@ function ActionButton({
     <button
       onClick={onClick}
       title={title}
-      className="p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-slate-800"
-      style={{ color: colors[variant] }}
+      disabled={disabled}
+      className={`p-1.5 rounded-lg cursor-pointer transition-colors hover:bg-slate-800 ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+      style={{ color: disabled ? 'var(--text-muted)' : colors[variant] }}
     >
       <Icon className="w-4 h-4" />
     </button>

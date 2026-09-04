@@ -213,3 +213,28 @@ export interface ProjectFile {
   language: string;
   content: string;
 }
+
+// Exploit Simulation Result
+export interface ExploitSimulation {
+  vulnerabilityId: string;
+  testPayload: string;
+  attackVector: string;
+  vulnerableResponse: {
+    status: string;
+    simulationOutput: string;
+    leakedDataOrAction: string;
+  };
+  remediatedResponse: {
+    status: string;
+    simulationOutput: string;
+    defenseMechanism: string;
+  };
+}
+
+// Copilot Chat Message
+export interface CopilotMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+}

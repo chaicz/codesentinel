@@ -52,6 +52,7 @@
 import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
 import { spawn } from 'child_process';
 import fs from 'fs/promises';
@@ -91,6 +92,10 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
 app.set('trust proxy', 1);
 
 // --- Auth endpoints ---
@@ -157,8 +162,10 @@ app.post('/api/admin/user/promote', (req, res, next) => {
 });
 
 // Admin change own password
-app.post('/api/admin/change-password', (req, res, next) => { 
-  requireAuth(req, res, () => requireAdmin(req, res, async (req: AuthedRequest, res: express.Response) => {
+app.post('/api/admin/change-password', 
+  (req, res, next) => { requireAuth(req, res, next); },
+  (req, res, next) => { requireAdmin(req, res, next); },
+  async (req: AuthedRequest, res: express.Response) => {
     try {
       const { currentPassword, newPassword } = req.body;
       const userId = req.user?.id;
@@ -207,8 +214,8 @@ app.post('/api/admin/change-password', (req, res, next) => {
       console.error('Change password error:', err);
       res.status(500).json({ error: 'Failed to change password' });
     }
-  }).catch(next)); 
-});
+  }
+);
 
 // Deep AI Security Code Analysis
 app.post('/api/analyze-code', async (req: AuthedRequest, res) => {

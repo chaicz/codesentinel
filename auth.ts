@@ -53,7 +53,7 @@ import mysql from 'mysql2/promise';
 import fs from 'fs/promises';
 import path from 'path';
 import type { NextFunction, Request, Response } from 'express';
-import type { AIProviderConfig } from '../src/types';
+import { AIProviderConfig } from './src/types';
 
 const ENV_PATH = path.resolve(process.cwd(), '.env');
 
@@ -140,6 +140,33 @@ export async function initializeDatabase(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  // Add missing columns (migration for existing tables)
+  try {
+    await p.execute(`ALTER TABLE users ADD COLUMN last_login DATETIME DEFAULT NULL`);
+  } catch (err: any) {
+    if (!err.message?.includes('Duplicate')) console.log('[DB] last_login column:', err.message);
+  }
+  try {
+    await p.execute(`ALTER TABLE users ADD COLUMN ai_provider VARCHAR(20) DEFAULT 'gemini'`);
+  } catch (err: any) {
+    if (!err.message?.includes('Duplicate')) console.log('[DB] ai_provider column:', err.message);
+  }
+  try {
+    await p.execute(`ALTER TABLE users ADD COLUMN ai_api_key VARCHAR(255) DEFAULT ''`);
+  } catch (err: any) {
+    if (!err.message?.includes('Duplicate')) console.log('[DB] ai_api_key column:', err.message);
+  }
+  try {
+    await p.execute(`ALTER TABLE users ADD COLUMN ai_model VARCHAR(64) DEFAULT 'gemini-2.0-flash'`);
+  } catch (err: any) {
+    if (!err.message?.includes('Duplicate')) console.log('[DB] ai_model column:', err.message);
+  }
+  try {
+    await p.execute(`ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user'`);
+  } catch (err: any) {
+    if (!err.message?.includes('Duplicate')) console.log('[DB] role column:', err.message);
+  }
+
   await p.execute(`
     CREATE TABLE IF NOT EXISTS sessions (
       session_id  VARCHAR(64)  PRIMARY KEY,
@@ -192,9 +219,19 @@ export async function initializeDatabase(): Promise<void> {
 
 // Cleanup expired sessions periodically
 setInterval(async () => {
+  const now = Date.now();
+  
+  // Clean up in-memory cache
+  for (const [sessionId, record] of sessions.entries()) {
+    if (now > record.expiresAt) {
+      sessions.delete(sessionId);
+    }
+  }
+  
+  // Clean up database
   try {
     const p = getPool();
-    await p.execute('DELETE FROM sessions WHERE expires_at < ?', [Date.now()]);
+    await p.execute('DELETE FROM sessions WHERE expires_at < ?', [now]);
   } catch {
     // Silently ignore cleanup errors
   }
@@ -319,26 +356,54 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [saltHex, hashHex] = stored.split(':');
-  if (!saltHex || !hashHex) return false;
-  const salt = Buffer.from(saltHex, 'hex');
-  const expected = Buffer.from(hashHex, 'hex');
-  if (expected.length !== SCRYPT_KEYLEN) return false;
-
-  const derived = await new Promise<Buffer>((resolve, reject) => {
-    crypto.scrypt(password, salt, SCRYPT_KEYLEN, (err, key) => {
-      if (err) reject(err);
-      else resolve(key as Buffer);
-    });
-  });
-
-  return crypto.timingSafeEqual(expected, derived);
+  // Check if stored hash is in scrypt format (salt:hash)
+  if (stored.includes(':')) {
+    const [saltHex, hashHex] = stored.split(':');
+    if (saltHex && hashHex) {
+      try {
+        const salt = Buffer.from(saltHex, 'hex');
+        const expected = Buffer.from(hashHex, 'hex');
+        
+        // Verify it's a valid scrypt hash (64 bytes)
+        if (expected.length === SCRYPT_KEYLEN && salt.length === 16) {
+          const derived = await new Promise<Buffer>((resolve, reject) => {
+            crypto.scrypt(password, salt, SCRYPT_KEYLEN, (err, key) => {
+              if (err) reject(err);
+              else resolve(key as Buffer);
+            });
+          });
+          return crypto.timingSafeEqual(expected, derived);
+        }
+      } catch (err) {
+        console.log('[verifyPassword] Scrypt verification failed, trying plain text');
+      }
+    }
+  }
+  
+  // Fallback: Try plain text comparison (for users created directly in DB)
+  if (stored === password) {
+    console.log('[verifyPassword] Plain text password matched');
+    return true;
+  }
+  
+  // Try MD5 comparison (legacy format)
+  try {
+    const md5Hash = crypto.createHash('md5').update(password).digest('hex');
+    if (stored === md5Hash) {
+      console.log('[verifyPassword] MD5 password matched');
+      return true;
+    }
+  } catch (err) {
+    // MD5 comparison failed
+  }
+  
+  return false;
 }
 
 async function loadUserByUsername(username: string): Promise<UserRecord | null> {
   const p = getPool();
   const [rows] = await p.execute<mysql.RowDataPacket[]>(
-    'SELECT id, username, email, password_hash, created_at, role, is_active, last_login, ai_provider, ai_api_key, ai_model FROM users WHERE username = ?',
+    'SELECT id, username, email, password_hash, created_at, role, is_active, last_login, ai_provider, ai_api_key, ai_model FROM users WHERE LOWER(username) = LOWER(?) AND is_active = 1',
     [username]
   );
   if (!rows[0]) return null;
@@ -432,29 +497,87 @@ function clearLoginFailures(req: Request) {
   loginAttempts.delete(clientKey(req));
 }
 
-function createSession(userId: string): string {
+async function createSession(userId: string): Promise<string> {
   const sessionId = crypto.randomBytes(32).toString('hex');
-  sessions.set(sessionId, { userId, expiresAt: Date.now() + SESSION_TTL_MS });
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  
+  // Store in memory cache
+  sessions.set(sessionId, { userId, expiresAt });
+  
+  // Persist to database synchronously to ensure session survives server restart
+  try {
+    const p = getPool();
+    await p.execute(
+      'INSERT INTO sessions (session_id, user_id, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE expires_at = VALUES(expires_at)',
+      [sessionId, userId, expiresAt]
+    );
+    console.log(`[Session] Created for user ${userId}, ID: ${sessionId.substring(0, 8)}...`);
+  } catch (err) {
+    console.error('[Session] Failed to persist to database:', err);
+  }
+  
   return sessionId;
 }
 
-function getSessionUserId(req: Request): string | null {
+async function getSessionUserId(req: Request): Promise<string | null> {
   const cookies = parseCookies(req.headers.cookie);
   const sessionId = cookies[COOKIE_NAME];
-  if (!sessionId) return null;
+  
+  console.log('[Session] Cookie name:', COOKIE_NAME, 'sessionId from cookie:', sessionId ? sessionId.substring(0, 20) + '...' : 'none');
+  
+  if (!sessionId) {
+    console.log('[Session] No session ID in cookies');
+    return null;
+  }
 
   // Check in-memory cache first
   const cached = sessions.get(sessionId);
   if (cached) {
+    console.log('[Session] Found in memory cache, expiresAt:', new Date(cached.expiresAt).toISOString(), 'isExpired:', Date.now() > cached.expiresAt);
     if (Date.now() > cached.expiresAt) {
       sessions.delete(sessionId);
+      // Clean up from database
+      const p = getPool();
+      p.execute('DELETE FROM sessions WHERE session_id = ?', [sessionId]).catch(() => {});
       return null;
     }
+    console.log('[Session] Returning userId from memory cache:', cached.userId);
     return cached.userId;
   }
 
-  // Fall back to database session (for server restarts)
-  return null; // Sessions are purely in-memory for simplicity
+  console.log('[Session] Not in memory cache, checking database...');
+  
+  // Fall back to database session (for server restarts or memory eviction)
+  try {
+    const p = getPool();
+    const [rows] = await p.execute<mysql.RowDataPacket[]>(
+      'SELECT user_id, expires_at FROM sessions WHERE session_id = ?',
+      [sessionId]
+    );
+    
+    console.log('[Session] Database query result, rows found:', rows.length);
+    
+    if (rows[0]) {
+      const expiresAt = Number(rows[0].expires_at);
+      if (Date.now() > expiresAt) {
+        // Session expired, clean up
+        console.log('[Session] Session expired, cleaning up');
+        await p.execute('DELETE FROM sessions WHERE session_id = ?', [sessionId]);
+        return null;
+      }
+      
+      // Restore to memory cache and return
+      const userId = rows[0].user_id;
+      console.log('[Session] Session valid, restoring to cache, userId:', userId);
+      sessions.set(sessionId, { userId, expiresAt });
+      return userId;
+    }
+  } catch (err) {
+    console.error('[Session] Database lookup failed:', err);
+  }
+  
+  console.log('[Session] Session not found anywhere');
+  return null;
 }
 
 export function validateUsername(username: unknown): string | null {
@@ -543,8 +666,13 @@ export async function registerHandler(req: Request, res: Response) {
 
     await insertUser(user);
 
-    const sessionId = createSession(user.id);
+    const sessionId = await createSession(user.id);
     setSessionCookie(res, sessionId);
+    
+    // Update last_login timestamp for new user
+    const p = getPool();
+    p.execute('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]).catch(() => {});
+    
     return res.status(201).json({ user: publicUser(user) });
   } catch (err: any) {
     console.error('Registration error:', err);
@@ -574,10 +702,12 @@ export async function registerHandler(req: Request, res: Response) {
 }
 
 export async function loginHandler(req: Request, res: Response) {
+  console.log('[Login] Attempting login for:', req.body?.username);
   const entry = loginAttempts.get(clientKey(req));
   const resetAt = entry?.resetAt || (Date.now() + LOGIN_WINDOW_MS);
 
   if (isLoginRateLimited(req)) {
+    console.log('[Login] Rate limited for:', req.body?.username);
     return res.status(429).json({ 
       error: 'Too many login attempts. Try again later.',
       retryAfter: Math.ceil((resetAt - Date.now()) / 1000),
@@ -589,8 +719,8 @@ export async function loginHandler(req: Request, res: Response) {
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
   if (!username || !password) {
+    console.log('[Login] Missing credentials - username:', !!username, 'password:', !!password);
     recordLoginFailure(req);
-    // More specific error messages
     if (!req.body?.username && !req.body?.password) {
       return res.status(400).json({ error: 'Username and password are required.' });
     }
@@ -603,66 +733,148 @@ export async function loginHandler(req: Request, res: Response) {
     return res.status(400).json({ error: 'Invalid username or password format.' });
   }
 
+  // Check database connection
+  let dbConnected = false;
   try {
-    // Check built-in admin first (no database required)
-    if (username.toLowerCase() === BUILTIN_ADMIN.username) {
-      // Direct password comparison for built-in admin
-      if (password === BUILTIN_ADMIN.password) {
-        clearLoginFailures(req);
-        const sessionId = createSession('builtin-admin');
-        setSessionCookie(res, sessionId);
-        return res.json({ 
-          user: {
-            id: 'builtin-admin',
-            username: 'admin',
-            role: 'admin',
-            isActive: true,
-            aiConfig: { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }
-          }
-        });
-      } else {
-        recordLoginFailure(req);
-        return res.status(401).json({ error: 'Invalid username or password.' });
-      }
-    }
-
-    // Check database for regular users
-    const user = await loadUserByUsername(username);
-    if (!user) {
-      // User doesn't exist - still record failure to prevent enumeration
-      recordLoginFailure(req);
-      return res.status(401).json({ error: 'Invalid username or password.' });
-    }
-    const ok = await verifyPassword(password, user.passwordHash);
-
-    if (!ok) {
-      recordLoginFailure(req);
-      return res.status(401).json({ error: 'Invalid username or password.' });
-    }
-
-    clearLoginFailures(req);
-    const sessionId = createSession(user.id);
-    setSessionCookie(res, sessionId);
-    return res.json({ user: publicUser(user) });
-  } catch (err: any) {
-    console.error('Login error:', err);
-    return res.status(500).json({ error: 'Login failed. Please try again.' });
+    const p = getPool();
+    await p.execute('SELECT 1');
+    dbConnected = true;
+    console.log('[Login] Database connection OK');
+  } catch (dbErr) {
+    console.log('[Login] Database not connected, using built-in admin');
   }
+
+  // Check database for user (admin or regular user)
+  if (dbConnected) {
+    console.log('[Login] Looking up user in database:', username);
+    try {
+      const p = getPool();
+      // Look for user by username (case-insensitive), any role
+      const [rows] = await p.execute(
+        'SELECT id, username, email, password_hash, role, is_active, ai_provider, ai_api_key, ai_model FROM users WHERE LOWER(username) = LOWER(?) AND is_active = 1',
+        [username]
+      );
+      
+      if (rows[0]) {
+        console.log('[Login] Found user in database:', rows[0].username, 'role:', rows[0].role, 'hash:', rows[0].password_hash.substring(0, 20) + '...');
+        const user = rows[0];
+        const ok = await verifyPassword(password, user.password_hash);
+        console.log('[Login] Password verification result:', ok);
+        
+        if (ok) {
+          clearLoginFailures(req);
+          
+          // Migrate password to scrypt format if needed
+          const needsMigration = !user.password_hash.includes(':') || 
+                                 user.password_hash.split(':')[1]?.length !== 128;
+          if (needsMigration) {
+            console.log('[Login] Migrating password to scrypt format');
+            const newHash = await hashPassword(password);
+            p.execute('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, user.id])
+              .then(() => console.log('[Login] Password migrated successfully'))
+              .catch((err) => console.error('[Login] Password migration failed:', err));
+          }
+          
+          const sessionId = await createSession(user.id);
+          setSessionCookie(res, sessionId);
+          
+          p.execute('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]).catch(() => {});
+          
+          console.log('[Login] Database user login successful:', user.username);
+          return res.json({ 
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email || '',
+              role: user.role || 'user',
+              isActive: true,
+              aiConfig: { 
+                provider: user.ai_provider || 'gemini', 
+                apiKey: user.ai_api_key || '', 
+                model: user.ai_model || 'gemini-2.0-flash' 
+              }
+            }
+          });
+        } else {
+          console.log('[Login] Password mismatch for user:', user.username);
+          recordLoginFailure(req);
+          return res.status(401).json({ error: 'Invalid username or password.' });
+        }
+      } else {
+        console.log('[Login] No user found in database with username:', username);
+      }
+    } catch (dbErr: any) {
+      console.error('[Login] Database lookup failed:', dbErr.message || dbErr);
+    }
+  }
+
+  // Check built-in admin as fallback (no database required)
+  console.log('[Login] Checking built-in admin');
+  if (username.toLowerCase() === BUILTIN_ADMIN.username) {
+    console.log('[Login] Built-in admin check - password match:', password === BUILTIN_ADMIN.password);
+    if (password === BUILTIN_ADMIN.password) {
+      clearLoginFailures(req);
+      const sessionId = await createSession('builtin-admin');
+      setSessionCookie(res, sessionId);
+      console.log('[Login] Built-in admin login successful');
+      return res.json({ 
+        user: {
+          id: 'builtin-admin',
+          username: 'admin',
+          role: 'admin',
+          isActive: true,
+          aiConfig: { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }
+        }
+      });
+    } else {
+      console.log('[Login] Built-in admin password mismatch');
+      recordLoginFailure(req);
+      return res.status(401).json({ error: 'Invalid username or password.' });
+    }
+  }
+
+  // No database user and not built-in admin
+  console.log('[Login] User not found anywhere');
+  recordLoginFailure(req);
+  return res.status(401).json({ error: 'Invalid username or password.' });
 }
 
-export function logoutHandler(req: Request, res: Response) {
+export async function logoutHandler(req: Request, res: Response) {
   const cookies = parseCookies(req.headers.cookie);
   const sessionId = cookies[COOKIE_NAME];
-  if (sessionId) sessions.delete(sessionId);
+  
+  if (sessionId) {
+    // Remove from memory
+    sessions.delete(sessionId);
+    
+    // Remove from database (best-effort, non-blocking)
+    const p = getPool();
+    p.execute('DELETE FROM sessions WHERE session_id = ?', [sessionId]).catch(() => {});
+  }
+  
   clearSessionCookie(res);
   return res.json({ ok: true });
 }
 
 export async function meHandler(req: Request, res: Response) {
-  const userId = getSessionUserId(req);
+  const userId = await getSessionUserId(req);
   if (!userId) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
+
+  // Handle built-in admin session
+  if (userId === 'builtin-admin') {
+    return res.json({
+      user: {
+        id: 'builtin-admin',
+        username: 'admin',
+        role: 'admin',
+        isActive: true,
+        aiConfig: { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }
+      }
+    });
+  }
+
   // Look up user from DB by ID
   const p = getPool();
   try {
@@ -674,6 +886,10 @@ export async function meHandler(req: Request, res: Response) {
       return res.status(401).json({ error: 'Not authenticated.' });
     }
     const row = rows[0];
+    
+    // Update last_login timestamp (non-blocking)
+    p.execute('UPDATE users SET last_login = NOW() WHERE id = ?', [userId]).catch(() => {});
+    
     return res.json({
       user: {
         id: row.id,
@@ -697,7 +913,7 @@ export async function meHandler(req: Request, res: Response) {
 }
 
 export async function updateAISettingsHandler(req: AuthedRequest, res: Response) {
-  const userId = getSessionUserId(req);
+  const userId = await getSessionUserId(req);
   if (!userId) {
     return res.status(401).json({ error: 'Sign in required.' });
   }
@@ -712,6 +928,34 @@ export async function updateAISettingsHandler(req: AuthedRequest, res: Response)
   }
 
   console.log('[AI Settings] Saving:', { provider, model, apiKeyLength: apiKey?.length || 0 });
+
+  // Handle built-in admin (no database persistence, only session memory)
+  if (userId === 'builtin-admin') {
+    req.user = {
+      ...req.user,
+      aiConfig: {
+        provider,
+        apiKey: typeof apiKey === 'string' ? apiKey.trim() : '',
+        model,
+      },
+    };
+    
+    // Update the .env file for default configuration
+    await updateEnvFile(apiKey, provider, model);
+    
+    console.log('[AI Settings] Updated for built-in admin');
+    return res.json({
+      user: {
+        id: 'builtin-admin',
+        username: 'admin',
+        aiConfig: {
+          provider,
+          apiKey: typeof apiKey === 'string' ? apiKey.trim() : '',
+          model,
+        },
+      },
+    });
+  }
 
   try {
     await updateUserAIConfig(userId, {
@@ -754,17 +998,40 @@ export async function updateAISettingsHandler(req: AuthedRequest, res: Response)
 }
 
 export async function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
-  const userId = getSessionUserId(req);
+  const userId = await getSessionUserId(req);
+  
+  console.log('[requireAuth] Session lookup - userId:', userId, 'path:', req.path);
+  
   if (!userId) {
+    console.log('[requireAuth] No userId from session');
     return res.status(401).json({ error: 'Sign in required.' });
   }
+
+  // Handle built-in admin session
+  if (userId === 'builtin-admin') {
+    req.user = {
+      id: 'builtin-admin',
+      username: 'admin',
+      role: 'admin',
+      isActive: true,
+      aiConfig: { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }
+    };
+    console.log('[requireAuth] Built-in admin session recognized');
+    return next();
+  }
+
   const p = getPool();
   try {
+    console.log('[requireAuth] Looking up user in database with id:', userId);
     const [rows] = await p.execute<mysql.RowDataPacket[]>(
       'SELECT id, username, email, role, is_active, created_at, last_login, ai_provider, ai_api_key, ai_model FROM users WHERE id = ?',
       [userId]
     );
+    
+    console.log('[requireAuth] Database query result, rows found:', rows.length);
+    
     if (!rows[0]) {
+      console.log('[requireAuth] User not found in database');
       return res.status(401).json({ error: 'Sign in required.' });
     }
     const row = rows[0];
@@ -782,9 +1049,10 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
         model: row.ai_model,
       },
     };
+    console.log('[requireAuth] User authenticated:', req.user.username, 'role:', req.user.role);
     next();
   } catch (err: any) {
-    console.error('requireAuth error:', err);
+    console.error('[requireAuth] Database error:', err.message || err);
     return res.status(500).json({ error: 'Authentication check failed.' });
   }
 }
@@ -808,6 +1076,15 @@ export function apiAuthGate(req: AuthedRequest, res: Response, next: NextFunctio
 }
 
 export async function getUserAIConfig(userId: string): Promise<AIProviderConfig | null> {
+  // Built-in admin doesn't have database config
+  if (userId === 'builtin-admin') {
+    return {
+      provider: 'gemini',
+      apiKey: '',
+      model: 'gemini-2.0-flash',
+    };
+  }
+  
   const p = getPool();
   try {
     const [rows] = await p.execute<mysql.RowDataPacket[]>(
@@ -846,7 +1123,49 @@ export async function getAllUsersHandler(req: AuthedRequest, res: Response) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
 
+  // Built-in admin without database - return only the admin user
+  if (req.user?.id === 'builtin-admin') {
+    return res.json({ 
+      users: [{
+        id: 'builtin-admin',
+        username: 'admin',
+        email: 'admin@example.com',
+        role: 'admin' as const,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        lastLogin: null,
+        aiProvider: 'gemini',
+        aiModel: 'gemini-2.0-flash',
+      }],
+      isDemo: true,
+      message: 'Database not connected. Connect to MySQL to manage users.'
+    });
+  }
+
   const p = getPool();
+  try {
+    // Test database connection
+    await p.execute('SELECT 1');
+  } catch (dbErr) {
+    console.error('Database connection error:', dbErr);
+    // Return demo data when database is not connected
+    return res.json({ 
+      users: [{
+        id: req.user.id,
+        username: req.user.username,
+        email: req.user.email || '',
+        role: req.user.role as 'admin' | 'user',
+        isActive: req.user.isActive !== false,
+        createdAt: req.user.createdAt || new Date().toISOString(),
+        lastLogin: req.user.lastLogin || null,
+        aiProvider: req.user.aiConfig?.provider || 'gemini',
+        aiModel: req.user.aiConfig?.model || 'gemini-2.0-flash',
+      }],
+      isDemo: true,
+      message: 'Database not connected. Please start MySQL/XAMPP and restart the server.'
+    });
+  }
+
   try {
     const [rows] = await p.execute<mysql.RowDataPacket[]>(`
       SELECT id, username, email, role, is_active, created_at, last_login, ai_provider, ai_model
@@ -879,8 +1198,31 @@ export async function getInactiveUsersHandler(req: AuthedRequest, res: Response)
     return res.status(403).json({ error: 'Admin access required.' });
   }
 
+  // Built-in admin without database - return empty list
+  if (req.user?.id === 'builtin-admin') {
+    return res.json({ 
+      users: [],
+      count: 0,
+      isDemo: true,
+      message: 'Database not connected. Connect to MySQL to view inactive users.'
+    });
+  }
+
   const days = parseInt(req.query.days as string) || 30; // Default 30 days
   const p = getPool();
+  
+  // Test database connection first
+  try {
+    await p.execute('SELECT 1');
+  } catch (dbErr) {
+    console.error('Database connection error:', dbErr);
+    return res.json({ 
+      users: [],
+      count: 0,
+      isDemo: true,
+      message: 'Database not connected. Please start MySQL/XAMPP and restart the server.'
+    });
+  }
   
   try {
     const [rows] = await p.execute<mysql.RowDataPacket[]>(`
@@ -889,7 +1231,7 @@ export async function getInactiveUsersHandler(req: AuthedRequest, res: Response)
       WHERE last_login IS NULL 
          OR last_login < DATE_SUB(NOW(), INTERVAL ? DAY)
          OR is_active = 0
-      ORDER BY last_login ASC NULLS FIRST, created_at ASC
+      ORDER BY last_login ASC, created_at ASC
     `, [days]);
     
     const users: AdminUser[] = rows.map(row => ({
@@ -925,6 +1267,11 @@ export async function resetUserPasswordHandler(req: AuthedRequest, res: Response
   
   if (userId === req.user?.id) {
     return res.status(400).json({ error: 'Cannot reset your own password. Use profile settings.' });
+  }
+  
+  // Built-in admin cannot be modified via admin panel
+  if (userId === 'builtin-admin') {
+    return res.status(400).json({ error: 'Cannot modify the built-in admin account.' });
   }
 
   const password = validatePassword(newPassword);
@@ -967,6 +1314,11 @@ export async function updateUserEmailHandler(req: AuthedRequest, res: Response) 
   
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required.' });
+  }
+  
+  // Built-in admin cannot be modified via admin panel
+  if (userId === 'builtin-admin') {
+    return res.status(400).json({ error: 'Cannot modify the built-in admin account.' });
   }
   
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1020,6 +1372,11 @@ export async function deleteUserHandler(req: AuthedRequest, res: Response) {
   if (userId === req.user?.id) {
     return res.status(400).json({ error: 'Cannot delete yourself.' });
   }
+  
+  // Built-in admin cannot be deleted
+  if (userId === 'builtin-admin') {
+    return res.status(400).json({ error: 'Cannot delete the built-in admin account.' });
+  }
 
   const p = getPool();
   try {
@@ -1065,6 +1422,11 @@ export async function toggleUserActiveHandler(req: AuthedRequest, res: Response)
   
   if (userId === req.user?.id) {
     return res.status(400).json({ error: 'Cannot deactivate yourself.' });
+  }
+  
+  // Built-in admin cannot be deactivated
+  if (userId === 'builtin-admin') {
+    return res.status(400).json({ error: 'Cannot modify the built-in admin account.' });
   }
 
   const p = getPool();
@@ -1115,6 +1477,11 @@ export async function bulkDeleteInactiveUsersHandler(req: AuthedRequest, res: Re
   if (userIds.includes(req.user?.id)) {
     return res.status(400).json({ error: 'Cannot delete yourself.' });
   }
+  
+  // Prevent deleting built-in admin
+  if (userIds.includes('builtin-admin')) {
+    return res.status(400).json({ error: 'Cannot delete the built-in admin account.' });
+  }
 
   const p = getPool();
   try {
@@ -1164,6 +1531,11 @@ export async function promoteToAdminHandler(req: AuthedRequest, res: Response) {
   if (userId === req.user?.id) {
     return res.status(400).json({ error: 'You are already an admin.' });
   }
+  
+  // Built-in admin is always admin
+  if (userId === 'builtin-admin') {
+    return res.status(400).json({ error: 'User is already an admin.' });
+  }
 
   const p = getPool();
   try {
@@ -1195,7 +1567,42 @@ export async function getAdminStatsHandler(req: AuthedRequest, res: Response) {
     return res.status(403).json({ error: 'Admin access required.' });
   }
 
+  // Built-in admin without database - return demo stats
+  if (req.user?.id === 'builtin-admin') {
+    return res.json({
+      stats: {
+        totalUsers: 0,
+        activeUsers: 0,
+        inactiveUsers: 0,
+        deactivatedUsers: 0,
+        adminCount: 1,
+      },
+      isDemo: true,
+      message: 'Database not connected. Connect to MySQL to manage users.'
+    });
+  }
+
   const p = getPool();
+  
+  // Test database connection first
+  try {
+    await p.execute('SELECT 1');
+  } catch (dbErr) {
+    console.error('Database connection error:', dbErr);
+    // Return demo stats when database is not connected
+    return res.json({
+      stats: {
+        totalUsers: 1,
+        activeUsers: 1,
+        inactiveUsers: 0,
+        deactivatedUsers: 0,
+        adminCount: 1,
+      },
+      isDemo: true,
+      message: 'Database not connected. Please start MySQL/XAMPP and restart the server.'
+    });
+  }
+
   try {
     // Total users
     const [totalRows] = await p.execute<mysql.RowDataPacket[]>('SELECT COUNT(*) as count FROM users');

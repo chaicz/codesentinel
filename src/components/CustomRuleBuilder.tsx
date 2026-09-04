@@ -93,6 +93,7 @@ const SEVERITY_CONFIG: Record<Severity, { color: string; bg: string; label: stri
   HIGH: { color: '#F97316', bg: 'rgba(249, 115, 22, 0.1)', label: 'High' },
   MEDIUM: { color: '#EAB308', bg: 'rgba(234, 179, 8, 0.1)', label: 'Medium' },
   LOW: { color: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)', label: 'Low' },
+  INFO: { color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)', label: 'Info' },
 };
 
 const CATEGORY_CONFIG: Record<RuleCategory, { icon: React.ReactNode; label: string }> = {

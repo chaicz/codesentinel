@@ -49,7 +49,7 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import type { AIProviderConfig } from '../src/types';
+import { AIProviderConfig } from './src/types';
 
 export interface AnalyzeCodeResult {
   summary: string;
